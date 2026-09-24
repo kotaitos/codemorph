@@ -17,3 +17,7 @@ run = "npm run check"
 [tasks.build]
 description = "Build the Word Map UI and server"
 run = "npm run build"
+
+[tasks.dev]
+description = "Start the local Word Map development UI"
+run = "npm run dev"
