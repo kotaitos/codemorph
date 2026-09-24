@@ -7,9 +7,13 @@ uv = "0.12.18"
 lockfile = true
 
 [tasks.setup]
-description = "Install the initial repository tooling"
-run = "npm ci"
+description = "Install npm and Python dependencies"
+run = "npm ci && uv sync --frozen --package codemorph-cli --group dev"
 
 [tasks.check]
-description = "Check public documentation"
-run = "npm run check:docs"
+description = "Check documentation, TypeScript, Python, and tests"
+run = "npm run check"
+
+[tasks.build]
+description = "Build the Word Map UI and server"
+run = "npm run build"

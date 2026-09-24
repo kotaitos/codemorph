@@ -2,34 +2,49 @@
 
 [日本語](README.md)
 
-codemorph is an open source project in development for exploring words in Git tracked Markdown through a local Word Map. It is intended to show Japanese and English word frequency, semantic similarity, and co-occurrence. It will not score writing quality or send analyzed text to an external service.
+codemorph analyzes Markdown in a Git repository locally and explores Japanese and English word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service.
 
-**Current status:** This repository contains the initial project setup. The analysis CLI, interface, and npm package have not been released.
+**Release status:** The app is implemented, but `@kotaitos/codemorph` is not yet published to npm. The `npx` commands below will work after publication. For this checkout, run `mise run setup`, `mise run build`, then `node cli/bin/codemorph.mjs`.
 
-## Planned components
+## Components
 
-- [core](core/README.md): Python package for Markdown analysis, statistics, and SQLite storage
-- [cli](cli/README.md): CLI with `init`, `analyze`, and `serve` commands
-- [ui](ui/README.md): Read-only SQLite API and Word Map
+- [core](core/README.md): Python Markdown analysis, statistics, and SQLite output
+- [cli](cli/README.md): npm launcher and `init`, `analyze`, `serve`
+- [ui](ui/README.md): read-only HTTP API and React/D3 Word Map
 
-The planned distribution command is `npx @kotaitos/codemorph`. It is not available yet.
+The core has no HTTP or UI dependency. Model files and results are stored in `.codemorph/` in the target repository.
 
-## Development setup
+## Usage
 
-The initial target platforms are macOS and Linux. mise manages development tool versions.
+On macOS or Linux, install Node.js 24.11.1 or newer. `init` and `analyze` also require Python 3.14 and [uv](https://docs.astral.sh/uv/). From the target Git repository, run:
+
+```sh
+npx @kotaitos/codemorph init
+npx @kotaitos/codemorph analyze
+npx @kotaitos/codemorph
+```
+
+The no-argument command serves `http://127.0.0.1:4173`; open it in a browser. Use `serve --port 5000` for another port. Each command accepts an optional repository path and otherwise uses the Git repository containing the current directory. Before analysis, the UI displays setup instructions.
+
+The first analysis downloads a pinned `minishlab/potion-multilingual-128M` model into `.codemorph/model/` and uses about 530 MB. Source text is not sent to the model host. After dependencies and the model are ready, analysis and viewing need no network.
+
+## Configuration and map
+
+`init` creates `codemorph.yml` and adds `.codemorph/` to `.git/info/exclude`. The configuration supports gitignore-style `include`/`exclude` patterns, `languages.natural` (`ja`, `en`), `stopwords.ja`/`stopwords.en`, `analysis.min_token_length`, `analysis.random_seed`, `analysis.cooccurrence.unit` (`paragraph` or `sentence`), and `analysis.cooccurrence.min_count`. Unknown or invalid values stop analysis.
+
+Eligible files are tracked or non-ignored untracked Markdown matching `include` but not `exclude`. An unreadable UTF-8 file produces a warning, while other files continue.
+
+The map retains distinct surface forms and places all words at approximate UMAP coordinates. Select a word for cosine similarity from the original vectors, normalized variants, co-occurring words, source paths, lines, and excerpts. Size shows frequency, color shows language, and opacity shows TF-IDF. Search and reset navigate the map. The read-only API exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. The server binds only to `127.0.0.1`.
+
+## Development
 
 ```sh
 mise install --locked
 mise run setup
 mise run check
+mise run build
 ```
 
-For now, `check` validates the public documentation. Analysis and UI tests will be added with their implementations. Do not commit models or analysis output.
+mise manages Python 3.14.7, Node.js 24, and uv. Pydantic validates configuration; Ruff checks Python; Biome checks TypeScript and other web code. CI uses fixed test embeddings. It does not download the model, analyze the repository, or start the viewer. Remove `.codemorph/` and analyze again if stored results become incompatible.
 
-## Contributing and contact
-
-- Propose changes: [CONTRIBUTING.en.md](CONTRIBUTING.en.md)
-- Report a vulnerability: [SECURITY.md](SECURITY.md)
-- Community expectations: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-
-This project is released under the [MIT License](LICENSE).
+See [CONTRIBUTING.en.md](CONTRIBUTING.en.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). This project uses the [MIT License](LICENSE).

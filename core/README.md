@@ -1,9 +1,9 @@
 # core
 
-codemorphの解析部分です。Gitリポジトリ内のMarkdown本文を対象に、日英の語の抽出、頻度・共起・意味の近さの計算、SQLiteへの保存を担当します。HTTPと画面には依存しない設計です。
+GitリポジトリのMarkdown本文から日本語・英語の語を抽出し、頻度、TF-IDF、共起、ベクトル類似度、UMAP座標を計算してSQLiteへ保存します。設定はPydanticで厳格に検証します。HTTPと画面には依存しません。
 
-**状態:** 未実装です。
+多言語モデルは固定コミットから対象リポジトリの`.codemorph/model/`へ取得します。本文はローカルで処理します。SQLiteは一時ファイルへ完全に書き込んでから置き換えます。
 
 ## English
 
-The planned Python analysis package will extract Japanese and English words from Markdown, calculate frequency, co-occurrence, and semantic similarity, and store results in SQLite. It will not depend on the HTTP server or UI. **Status:** Not implemented yet.
+The Python core extracts Japanese and English surface forms from Git repository Markdown, computes frequency, TF-IDF, co-occurrence, embedding similarity, and UMAP positions, then writes SQLite. Pydantic strictly validates configuration. It has no HTTP or UI dependency. The pinned model is downloaded to `.codemorph/model/` and text is processed locally. A complete temporary SQLite file replaces the previous result atomically.
