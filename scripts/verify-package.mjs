@@ -1,18 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 
-const packed = spawnSync("npm", ["pack", "--dry-run", "--json"], {
-  encoding: "utf8",
-  maxBuffer: 10 * 1024 * 1024,
-});
+const built = spawnSync("npm", ["run", "build"], { stdio: "inherit" });
+if (built.status !== 0) process.exit(built.status ?? 1);
+
+const packed = spawnSync(
+  "npm",
+  ["pack", "--dry-run", "--json", "--ignore-scripts"],
+  {
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+  },
+);
 if (packed.status !== 0) {
   process.stderr.write(packed.stderr);
   process.exit(packed.status ?? 1);
 }
-const jsonStart = packed.stdout.lastIndexOf("\n{\n");
-const report = JSON.parse(
-  packed.stdout.slice(jsonStart < 0 ? 0 : jsonStart + 1),
-);
+const report = JSON.parse(packed.stdout);
 const entry = Array.isArray(report) ? report[0] : Object.values(report)[0];
 const paths = new Set(entry.files.map((file) => file.path));
 for (const required of [
