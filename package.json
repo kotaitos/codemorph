@@ -26,6 +26,7 @@
     "access": "public"
   },
   "scripts": {
+    "dev": "node scripts/dev.mjs",
     "check:docs": "markdownlint-cli2 \"**/*.md\" \".github/**/*.md\" \"!**/.venv/**\" \"!**/node_modules/**\" \"!**/.codemorph/**\"",
     "check:biome": "biome ci .",
     "check:types": "tsc --project ui/tsconfig.json",
