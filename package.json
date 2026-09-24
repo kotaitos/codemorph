@@ -1,13 +1,55 @@
 {
   "name": "@kotaitos/codemorph",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Local Word Map for Japanese and English Markdown in Git repositories (in development)",
+  "version": "0.1.0",
+  "description": "Private local Word Map for Japanese and English Markdown in Git repositories",
   "license": "MIT",
+  "type": "module",
+  "bin": {
+    "codemorph": "cli/bin/codemorph.mjs"
+  },
+  "files": [
+    "cli/bin",
+    "cli/python/pyproject.toml",
+    "cli/python/src/codemorph_cli/*.py",
+    "core/pyproject.toml",
+    "core/src/codemorph_core/*.py",
+    "ui/dist",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "check:docs": "markdownlint-cli2 \"**/*.md\" \".github/**/*.md\""
+    "check:docs": "markdownlint-cli2 \"**/*.md\" \".github/**/*.md\" \"!**/.venv/**\" \"!**/node_modules/**\" \"!**/.codemorph/**\"",
+    "check:biome": "biome ci .",
+    "check:types": "tsc --project ui/tsconfig.json",
+    "test:ui": "node --test ui/src/*.test.mjs",
+    "check:package": "node scripts/verify-package.mjs",
+    "check:python": "uv run --frozen --package codemorph-cli --group dev ruff check core cli/python && uv run --frozen --package codemorph-cli --group dev ruff format --check core cli/python && uv run --frozen --package codemorph-cli --group dev pytest",
+    "check": "npm run check:docs && npm run check:biome && npm run check:types && npm run test:ui && npm run check:python",
+    "build": "vite build --config ui/vite.config.ts && esbuild ui/server/server.ts --bundle --platform=node --format=esm --target=node24 --outfile=ui/dist/server.mjs",
+    "prepack": "npm run build",
+    "test": "npm run check"
   },
   "devDependencies": {
-    "markdownlint-cli2": "0.23.3"
+    "@biomejs/biome": "2.5.14",
+    "@types/d3": "7.4.3",
+    "@types/node": "24.13.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "4.7.0",
+    "d3": "7.9.0",
+    "esbuild": "0.25.12",
+    "markdownlint-cli2": "0.23.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
   }
 }
