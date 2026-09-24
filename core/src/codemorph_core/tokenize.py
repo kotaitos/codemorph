@@ -29,7 +29,7 @@ class WordTokenizer:
         self.japanese_stopwords = set(config.stopwords.ja)
         self.english_stopwords = {word.casefold() for word in config.stopwords.en}
         self.japanese = (
-            dictionary.Dictionary().tokenizer() if "ja" in config.languages.natural else None
+            dictionary.Dictionary().create() if "ja" in config.languages.natural else None
         )
 
     def words(self, text: str) -> list[Word]:

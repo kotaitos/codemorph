@@ -12,8 +12,8 @@ dependencies = [
   "pydantic>=2.11",
   "pyyaml>=6.0",
   "scikit-learn>=1.7",
-  "sudachidict-core>=20250825",
-  "sudachipy>=0.7",
+  "sudachidict-core>=20250825,<20260723.1",
+  "sudachipy>=0.6.11,<0.7",
   "umap-learn>=0.5.12",
 ]
 

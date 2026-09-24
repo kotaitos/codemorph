@@ -45,6 +45,6 @@ mise run check
 mise run build
 ```
 
-mise manages Python 3.14.7, Node.js 24, and uv. Pydantic validates configuration; Ruff checks Python; Biome checks TypeScript and other web code. CI uses fixed test embeddings. It does not download the model, analyze the repository, or start the viewer. Remove `.codemorph/` and analyze again if stored results become incompatible.
+mise manages Python 3.14.7, Node.js 24, and uv. Project settings route PyPI and npm dependency downloads through Takumi Guard. Pydantic validates configuration; Ruff checks Python; Biome checks TypeScript and other web code. CI uses fixed test embeddings. It does not download the model, analyze the repository, or start the viewer. Remove `.codemorph/` and analyze again if stored results become incompatible.
 
 See [CONTRIBUTING.en.md](CONTRIBUTING.en.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). This project uses the [MIT License](LICENSE).

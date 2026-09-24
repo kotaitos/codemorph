@@ -45,6 +45,6 @@ mise run check
 mise run build
 ```
 
-miseはPython 3.14.7、Node.js 24、uvを管理します。設定はPydantic、PythonはRuff、TypeScript等はBiomeで検査します。CIは固定テストベクトルを使い、実モデル取得、実リポジトリ解析、閲覧サーバー起動を行いません。解析結果の互換性に問題があれば`.codemorph/`を削除して再解析してください。
+miseはPython 3.14.7、Node.js 24、uvを管理します。PyPIとnpmの依存取得先はプロジェクト設定でTakumi Guardへ固定しています。設定はPydantic、PythonはRuff、TypeScript等はBiomeで検査します。CIは固定テストベクトルを使い、実モデル取得、実リポジトリ解析、閲覧サーバー起動を行いません。解析結果の互換性に問題があれば`.codemorph/`を削除して再解析してください。
 
 [貢献ガイド](CONTRIBUTING.md)・[脆弱性報告](SECURITY.md)・[行動規範](CODE_OF_CONDUCT.md)を参照してください。[MIT License](LICENSE)で公開しています。

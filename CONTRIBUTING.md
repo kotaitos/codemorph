@@ -14,3 +14,12 @@ codemorphは初期開発中です。問題の報告や機能の提案にはGitHu
 解析対象の文書、ダウンロードしたモデル、`.codemorph/`の解析結果、秘密情報をコミットしないでください。解析や閲覧をGitHub Actionsで実行する構成も追加しないでください。
 
 Pull RequestはCIとコードオーナーのレビューを経てマージします。脆弱性の報告方法は[SECURITY.md](SECURITY.md)を参照してください。
+
+## npm公開担当者向け
+
+公開は`main`のCI成功後に行います。Takumi Guardは依存取得専用なので、ログインと公開にはnpm本体のregistryを明示してください。`npm publish`は`prepack`で画面資産をビルドします。
+
+```sh
+npm login --registry=https://registry.npmjs.org/
+npm publish --registry=https://registry.npmjs.org/ --access public
+```
