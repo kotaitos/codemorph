@@ -1,0 +1,15 @@
+[tools]
+python = "3.14.7"
+node = "24"
+uv = "0.12.18"
+
+[settings]
+lockfile = true
+
+[tasks.setup]
+description = "Install the initial repository tooling"
+run = "npm ci"
+
+[tasks.check]
+description = "Check public documentation"
+run = "npm run check:docs"

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "脆弱性の非公開報告 / Private vulnerability report"
+    url: "https://github.com/kotaitos/codemorph/security/advisories/new"
+    about: "セキュリティ上の問題はここから非公開で報告してください。 / Report security issues privately."

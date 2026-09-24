@@ -1,0 +1,26 @@
+name: "不具合報告 / Bug report"
+description: "既存の動作について報告する / Report a problem with existing behavior"
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "脆弱性は公開Issueに書かず、Securityの非公開報告を利用してください。 / Report vulnerabilities privately through Security, not in a public issue."
+  - type: textarea
+    id: behavior
+    attributes:
+      label: "発生したこと / What happened"
+      description: "期待した結果と実際の結果を記載してください。 / Describe the expected and actual results."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "再現手順 / Steps to reproduce"
+      description: "機密文書や解析結果は貼らないでください。 / Do not paste private documents or analysis output."
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: "環境 / Environment"
+      description: "OS、Python、Node.js、codemorphのバージョンなど / OS and relevant versions"

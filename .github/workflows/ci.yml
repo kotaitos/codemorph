@@ -1,0 +1,24 @@
+name: Repository checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  repository-checks:
+    name: repository-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v4.3.0
+      - run: npm ci
+      - run: mise run check
+      - name: Verify configuration and lockfiles
+        run: |
+          python -c "import tomllib; tomllib.load(open('mise.toml', 'rb'))"
+          git diff --exit-code -- mise.lock package-lock.json

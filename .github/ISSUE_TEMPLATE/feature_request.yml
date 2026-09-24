@@ -1,0 +1,18 @@
+name: "機能提案 / Feature request"
+description: "改善案を提案する / Propose an improvement"
+title: "[Feature] "
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: "目的 / Goal"
+      description: "解決したい問題を記載してください。 / Describe the problem you want to solve."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "提案 / Proposal"
+      description: "望む動作や代替案があれば記載してください。 / Describe the desired behavior or alternatives."
+    validations:
+      required: true

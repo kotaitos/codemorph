@@ -1,0 +1,13 @@
+{
+  "name": "@kotaitos/codemorph",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local Word Map for Japanese and English Markdown in Git repositories (in development)",
+  "license": "MIT",
+  "scripts": {
+    "check:docs": "markdownlint-cli2 \"**/*.md\" \".github/**/*.md\""
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "0.23.3"
+  }
+}
