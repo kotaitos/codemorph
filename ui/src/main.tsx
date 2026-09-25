@@ -10,7 +10,7 @@ import {
 import { createRoot } from "react-dom/client";
 import { DetailPanel } from "./DetailPanel";
 import { ExplorerPanel } from "./ExplorerPanel";
-import { languageLabel, messages, type UiLocale } from "./i18n";
+import { messages, type UiLocale } from "./i18n";
 import { Icon } from "./icons";
 import type { Detail, Summary, Token } from "./types";
 import {
@@ -41,7 +41,8 @@ function App() {
   );
   const [tokens, setTokens] = useState<Token[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const [pinnedDetail, setPinnedDetail] = useState<Detail | null>(null);
+  const [previewDetail, setPreviewDetail] = useState<Detail | null>(null);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<number>();
@@ -52,6 +53,11 @@ function App() {
   const svg = useRef<SVGSVGElement>(null);
   const zoom = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectionRequest = useRef(0);
+  const pendingSelectionId = useRef<number | null>(null);
+  const previewRequest = useRef(0);
+  const previewTargetId = useRef<number | null>(null);
+  const previewTimer = useRef<number | null>(null);
+  const detailCache = useRef(new Map<number, Detail>());
   const t = messages[locale];
   const formatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const { width: WIDTH, height: HEIGHT } = mapSize;
@@ -112,7 +118,20 @@ function App() {
       language ? tokens.filter((token) => token.language === language) : tokens,
     [tokens, language],
   );
+  const detail =
+    previewDetail && previewDetail.token.id === hoverId
+      ? previewDetail
+      : pinnedDetail;
+  const isPreview = detail !== null && detail === previewDetail;
   const selectedId = detail?.token.id;
+  // The selected point must stay above overlapping hit targets so it can be clicked again.
+  const plottedTokens = useMemo(() => {
+    if (selectedId === undefined) return displayed;
+    const selected = displayed.find((token) => token.id === selectedId);
+    return selected
+      ? [...displayed.filter((token) => token.id !== selectedId), selected]
+      : displayed;
+  }, [displayed, selectedId]);
   const pointScale = markerScale(WIDTH, HEIGHT, displayed.length);
   const relatedIds = useMemo(
     () =>
@@ -155,8 +174,6 @@ function App() {
     ],
   );
   const maxTfidf = Math.max(1, ...tokens.map((token) => token.tfidf));
-  const hovered = tokens.find((token) => token.id === hoverId);
-  const hoverPosition = hovered ? positions.get(hovered.id) : undefined;
   const activeRelations = detail
     ? [
         ...detail.similar
@@ -165,11 +182,15 @@ function App() {
         ...detail.variants.map((item) => ({ ...item, kind: "variant" })),
       ]
     : [];
+  const activePoint =
+    selectedId === undefined ? undefined : positions.get(selectedId);
+  const inspectorSide =
+    activePoint && activePoint.x >= WIDTH / 2 ? "left" : "right";
 
   useEffect(() => {
     if (
       focusId === null ||
-      detail?.token.id !== focusId ||
+      pinnedDetail?.token.id !== focusId ||
       !svg.current ||
       !zoom.current
     )
@@ -188,21 +209,85 @@ function App() {
           .translate(WIDTH / 2 - point.x * 2.6, HEIGHT / 2 - point.y * 2.6)
           .scale(2.6),
       );
-  }, [focusId, detail?.token.id, positions, WIDTH, HEIGHT]);
+  }, [focusId, pinnedDetail?.token.id, positions, WIDTH, HEIGHT]);
+
+  function clearPreview() {
+    ++previewRequest.current;
+    if (previewTimer.current !== null)
+      window.clearTimeout(previewTimer.current);
+    previewTimer.current = null;
+    previewTargetId.current = null;
+    setHoverId(undefined);
+    setPreviewDetail(null);
+  }
+
+  function startPreview(id: number, delay = 80) {
+    if (previewTargetId.current === id) return;
+    ++previewRequest.current;
+    if (previewTimer.current !== null)
+      window.clearTimeout(previewTimer.current);
+    previewTargetId.current = id;
+    setHoverId(id);
+    setPreviewDetail(null);
+    if (pinnedDetail?.token.id === id) return;
+    const cached = detailCache.current.get(id);
+    if (cached) {
+      setPreviewDetail(cached);
+      return;
+    }
+    const request = previewRequest.current;
+    previewTimer.current = window.setTimeout(() => {
+      previewTimer.current = null;
+      getJson<Detail>(`/api/tokens/${id}`)
+        .then((next) => {
+          detailCache.current.set(id, next);
+          if (request === previewRequest.current) setPreviewDetail(next);
+        })
+        .catch(() => {
+          // A transient hover preview must not replace the map with an error.
+        });
+    }, delay);
+  }
 
   function select(id: number, focus = false) {
+    if (pinnedDetail?.token.id === id || pendingSelectionId.current === id) {
+      clearSelection();
+      return;
+    }
+    const preview =
+      previewDetail?.token.id === id
+        ? previewDetail
+        : detailCache.current.get(id);
+    clearPreview();
     setFocusId(focus ? id : null);
     const request = ++selectionRequest.current;
+    if (preview) {
+      pendingSelectionId.current = null;
+      setPinnedDetail(preview);
+      return;
+    }
+    pendingSelectionId.current = id;
     getJson<Detail>(`/api/tokens/${id}`)
       .then((next) => {
-        if (request === selectionRequest.current) setDetail(next);
+        if (request === selectionRequest.current) {
+          detailCache.current.set(id, next);
+          pendingSelectionId.current = null;
+          setPinnedDetail(next);
+        }
       })
-      .catch((cause) => setError(String(cause)));
+      .catch((cause) => {
+        if (request === selectionRequest.current) {
+          pendingSelectionId.current = null;
+          setError(String(cause));
+        }
+      });
   }
 
   function clearSelection() {
     ++selectionRequest.current;
-    setDetail(null);
+    pendingSelectionId.current = null;
+    clearPreview();
+    setPinnedDetail(null);
     setFocusId(null);
   }
 
@@ -234,7 +319,8 @@ function App() {
 
   function filterLanguage(next: string | null) {
     setLanguage(next);
-    if (next && detail?.token.language !== next) clearSelection();
+    if (next && pinnedDetail?.token.language !== next) clearSelection();
+    else clearPreview();
   }
 
   function chooseFromPanel(id: number) {
@@ -272,7 +358,7 @@ function App() {
           </fieldset>
         </div>
       </header>
-      <main className={`workspace ${detail ? "has-detail" : ""}`}>
+      <main className="workspace">
         <ExplorerPanel
           locale={locale}
           summary={summary}
@@ -374,7 +460,7 @@ function App() {
                       />
                     ) : null;
                   })}
-                {displayed.map((token) => {
+                {plottedTokens.map((token) => {
                   const point = positions.get(token.id);
                   if (!point) return null;
                   const radius = pointRadius(token.frequency) * pointScale;
@@ -388,24 +474,29 @@ function App() {
                       key={token.id}
                       className={`word ${dim ? "dim" : ""} ${selected ? "selected" : ""}`}
                       href={`#word-${token.id}`}
-                      onMouseEnter={() => setHoverId(token.id)}
-                      onMouseLeave={() => setHoverId(undefined)}
-                      onFocus={() => setHoverId(token.id)}
-                      onBlur={() => setHoverId(undefined)}
+                      onMouseEnter={() => {
+                        if (
+                          window.matchMedia(
+                            "(hover: hover) and (pointer: fine)",
+                          ).matches
+                        )
+                          startPreview(token.id);
+                      }}
+                      onMouseLeave={clearPreview}
+                      onFocus={() => startPreview(token.id, 0)}
+                      onBlur={clearPreview}
                       onClick={(event) => {
                         event.preventDefault();
                         select(token.id);
                       }}
-                      aria-label={`${token.surface}: ${t.select}`}
+                      onKeyDown={(event) => {
+                        if (event.key === " ") {
+                          event.preventDefault();
+                          select(token.id);
+                        }
+                      }}
+                      aria-label={`${token.surface}: ${pinnedDetail?.token.id === token.id ? t.clear : t.pin}`}
                     >
-                      {selected && (
-                        <circle
-                          cx={point.x}
-                          cy={point.y}
-                          r={(radius + 11) / transform.k}
-                          className="halo"
-                        />
-                      )}
                       <circle
                         cx={point.x}
                         cy={point.y}
@@ -454,21 +545,6 @@ function App() {
                   })}
               </g>
             </svg>
-            {hovered && hoverPosition && (
-              <div
-                className="map-tooltip"
-                style={{
-                  left: `${Math.min(83, Math.max(4, ((hoverPosition.x * transform.k + transform.x) / WIDTH) * 100))}%`,
-                  top: `${Math.min(82, Math.max(8, ((hoverPosition.y * transform.k + transform.y) / HEIGHT) * 100))}%`,
-                }}
-              >
-                <strong>{hovered.surface}</strong>
-                <span>
-                  {languageLabel(hovered.language, locale)} ·{" "}
-                  {t.occurrencesCount} {formatter.format(hovered.frequency)}
-                </span>
-              </div>
-            )}
             <div className="map-caption">{t.sourceHint}</div>
           </div>
           <div className="map-footer">
@@ -480,6 +556,8 @@ function App() {
           <DetailPanel
             detail={detail}
             locale={locale}
+            preview={isPreview}
+            side={inspectorSide}
             onClose={clearSelection}
             onSelect={chooseFromPanel}
           />

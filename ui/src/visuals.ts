@@ -62,7 +62,7 @@ const SCRIPT_COLORS: Record<string, string> = {
   ja: "#69d8c3",
   en: "#f3b467",
   Latn: "#f3b467",
-  Hani: "#69d8c3",
+  Hani: "#c7a6f4",
   Cyrl: "#a5b5ff",
   Arab: "#e3a5eb",
   Deva: "#f2a6a2",

@@ -36,6 +36,7 @@ test("frequency and TF-IDF map to bounded visual channels", () => {
   assert.ok(pointOpacity(1, 10) < pointOpacity(10, 10));
   assert.equal(pointOpacity(10, 10), 1);
   assert.equal(languageColor("und-Cyrl"), languageColor("und-Cyrl"));
+  assert.notEqual(languageColor("ja"), languageColor("und-Hani"));
   assert.ok(markerScale(350, 480, 750) < markerScale(1000, 600, 750));
 });
 

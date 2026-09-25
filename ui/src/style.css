@@ -109,13 +109,12 @@ input:focus-visible,
   color: var(--text);
 }
 .workspace {
+  position: relative;
   display: grid;
+  --explorer-width: 300px;
   grid-template-columns: 300px minmax(0, 1fr);
   height: calc(100dvh - 64px);
   min-height: 570px;
-}
-.workspace.has-detail {
-  grid-template-columns: 300px minmax(0, 1fr) 350px;
 }
 .eyebrow,
 .section-label {

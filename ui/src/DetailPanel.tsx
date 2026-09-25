@@ -6,11 +6,20 @@ import { languageColor } from "./visuals";
 type Props = {
   detail: Detail;
   locale: UiLocale;
+  preview: boolean;
+  side: "left" | "right";
   onClose: () => void;
   onSelect: (id: number) => void;
 };
 
-export function DetailPanel({ detail, locale, onClose, onSelect }: Props) {
+export function DetailPanel({
+  detail,
+  locale,
+  preview,
+  side,
+  onClose,
+  onSelect,
+}: Props) {
   const t = messages[locale];
   const formatter = new Intl.NumberFormat(locale);
 
@@ -18,7 +27,12 @@ export function DetailPanel({ detail, locale, onClose, onSelect }: Props) {
     return items.length ? (
       <div className="chips">
         {items.map((item) => (
-          <button key={item.id} type="button" onClick={() => onSelect(item.id)}>
+          <button
+            key={item.id}
+            type="button"
+            disabled={preview}
+            onClick={() => onSelect(item.id)}
+          >
             <span
               className="language-dot"
               style={{ backgroundColor: languageColor(item.language) }}
@@ -38,21 +52,27 @@ export function DetailPanel({ detail, locale, onClose, onSelect }: Props) {
   }
 
   return (
-    <aside className="detail-panel" aria-label={t.selected}>
+    <aside
+      className={`detail-panel side-${side} ${preview ? "preview" : "pinned"}`}
+      aria-label={preview ? t.preview : t.selected}
+    >
       <div className="detail-header">
         <div>
-          <p className="eyebrow">{t.selected}</p>
+          <p className="eyebrow">{preview ? t.preview : t.selected}</p>
           <h2>{detail.token.surface}</h2>
+          {preview && <p className="pin-hint">{t.pinHelp}</p>}
         </div>
-        <button
-          type="button"
-          className="icon-button close-detail"
-          onClick={onClose}
-          aria-label={t.clear}
-          title={t.clear}
-        >
-          <Icon name="close" />
-        </button>
+        {!preview && (
+          <button
+            type="button"
+            className="icon-button close-detail"
+            onClick={onClose}
+            aria-label={t.clear}
+            title={t.clear}
+          >
+            <Icon name="close" />
+          </button>
+        )}
       </div>
       <div className="detail-scroll">
         <div className="detail-metrics">
