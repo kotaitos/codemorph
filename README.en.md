@@ -2,7 +2,7 @@
 
 [日本語](README.md)
 
-codemorph analyzes Markdown in a Git repository locally and explores Japanese and English word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service.
+codemorph analyzes Markdown in a Git repository locally and explores multilingual word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service.
 
 **Release status:** The app is implemented, but `@kotaitos/codemorph` is not yet published to npm. The `npx` commands below will work after publication. For this checkout, run `mise run setup`, `mise run build`, then `node cli/bin/codemorph.mjs`.
 
@@ -30,11 +30,11 @@ The first analysis downloads a pinned `minishlab/potion-multilingual-128M` model
 
 ## Configuration and map
 
-`init` creates `codemorph.yml` and adds `.codemorph/` to `.git/info/exclude`. The configuration supports gitignore-style `include`/`exclude` patterns, `languages.natural` (`ja`, `en`), `stopwords.ja`/`stopwords.en`, `analysis.min_token_length`, `analysis.random_seed`, `analysis.cooccurrence.unit` (`paragraph` or `sentence`), and `analysis.cooccurrence.min_count`. Unknown or invalid values stop analysis.
+`init` creates `codemorph.yml` and adds `.codemorph/` to `.git/info/exclude`. The configuration supports gitignore-style `include`/`exclude` patterns. `languages.natural: [all]` segments text across scripts with ICU; use tags such as `[ja, en]` or `[fr]` to limit extraction. `stopwords.ja`, `stopwords.en`, and `stopwords.words.<language tag>` add excluded words. Built-in English stopwords apply only when `en` is explicitly selected. Analysis settings include `min_token_length`, `random_seed`, `cooccurrence.unit` (`paragraph` or `sentence`), and `cooccurrence.min_count`. Unknown or invalid values stop analysis.
 
 Eligible files are tracked or non-ignored untracked Markdown matching `include` but not `exclude`. An unreadable UTF-8 file produces a warning, while other files continue.
 
-The map retains distinct surface forms and places all words at approximate UMAP coordinates. Select a word for cosine similarity from the original vectors, normalized variants, co-occurring words, source paths, lines, and excerpts. Size shows frequency, color shows language, and opacity shows TF-IDF. Search and reset navigate the map. The read-only API exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. The server binds only to `127.0.0.1`.
+The map retains distinct surface forms and places all words at approximate UMAP coordinates. Select a word for cosine similarity from the original vectors, normalized variants, co-occurring words, source paths, lines, and excerpts. Size shows frequency, color shows identifiable language or script, and brightness shows TF-IDF. Collision-aware labels, script filters, search, zoom controls, and reset help navigate the map. UI text switches between Japanese and English. With `all`, words in scripts shared by several languages use labels such as `und-Latn`; the word alone does not establish its language. Japanese runs containing kana use Sudachi. Segmentation and similarity quality vary by language; the embedding model was trained on 101 languages. The read-only API exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. The server binds only to `127.0.0.1`.
 
 ## Development
 

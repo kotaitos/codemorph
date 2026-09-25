@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-codemorphはGitリポジトリ内のMarkdown本文をローカルで解析し、日本語・英語の頻度、意味の近さ、共起関係をWord Mapで探索するOSSです。文章の良否を採点せず、対象本文を外部へ送信しません。
+codemorphはGitリポジトリ内のMarkdown本文をローカルで解析し、多言語の語の頻度、意味の近さ、共起関係をWord Mapで探索するOSSです。文章の良否を採点せず、対象本文を外部へ送信しません。
 
 **公開状況:** アプリは実装済みですが、npmへの`@kotaitos/codemorph`公開は準備中です。以下の`npx`コマンドは公開後に利用できます。開発版は`mise run setup`、`mise run build`の後、`node cli/bin/codemorph.mjs`で実行できます。
 
@@ -30,11 +30,11 @@ npx @kotaitos/codemorph
 
 ## 設定と表示
 
-`init`は`codemorph.yml`を作り、`.codemorph/`を`.git/info/exclude`へ追加します。`include`・`exclude`はリポジトリ相対のgitignore形式パターンです。`languages.natural`は`ja`・`en`、`stopwords.ja`・`stopwords.en`は除外語、`analysis.min_token_length`は最小文字数、`analysis.random_seed`はUMAPのseed、`analysis.cooccurrence.unit`は`paragraph`か`sentence`、`analysis.cooccurrence.min_count`は保存する最小回数を指定します。未知の項目や不正な値では解析を開始しません。
+`init`は`codemorph.yml`を作り、`.codemorph/`を`.git/info/exclude`へ追加します。`include`・`exclude`はリポジトリ相対のgitignore形式パターンです。`languages.natural: [all]`でICUが分かち書きできる文字体系をまとめて解析します。特定の言語に絞る場合は`[ja, en]`や`[fr]`のように言語タグを指定できます。`stopwords.ja`・`stopwords.en`と`stopwords.words.<言語タグ>`は除外語です。英語の組み込み除外語は`en`を明示した場合だけ適用します。`analysis.min_token_length`は最小文字数、`analysis.random_seed`はUMAPのseed、`analysis.cooccurrence.unit`は`paragraph`か`sentence`、`analysis.cooccurrence.min_count`は保存する最小回数を指定します。未知の項目や不正な値では解析を開始しません。
 
 対象はGitの追跡中ファイルと、Gitで無視されていない未追跡ファイルのうち、`include`に一致し`exclude`に一致しないMarkdownです。UTF-8で読めない個別ファイルは警告にして続行します。
 
-Word Mapは元の表記を別々の語として保存し、全語を近似UMAP座標に配置します。選択時には元ベクトルで計算した類似度、同じ正規形の表記、共起語、ファイル・行番号・抜粋を表示します。大きさは頻度、色は言語、透明度はTF-IDFです。検索と「全体を表示」で移動・リセットできます。APIは`GET /api/summary`、`/api/map`、`/api/tokens/{id}`です。サーバーは`127.0.0.1`にのみbindし、SQLiteを読み取り専用で開きます。
+Word Mapは元の表記を別々の語として保存し、全語を近似UMAP座標に配置します。選択時には元ベクトルで計算した類似度、同じ正規形の表記、共起語、ファイル・行番号・抜粋を表示します。大きさは頻度、色は判別可能な言語または文字体系、明るさはTF-IDFです。衝突を避けたラベル、文字体系の絞り込み、検索、拡大・縮小、全体表示で探索できます。画面文言は日本語・英語に切り替えられます。文字体系が共通する言語は単語だけから判別できないため、`all`では`und-Latn`などとして記録します。日本語はかなを含む部分をSudachiで解析します。ICUの分かち書きやモデルの類似度の品質は言語により異なり、モデルは101言語で学習されています。APIは`GET /api/summary`、`/api/map`、`/api/tokens/{id}`です。サーバーは`127.0.0.1`にのみbindし、SQLiteを読み取り専用で開きます。
 
 ## 開発と検査
 

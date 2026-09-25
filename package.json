@@ -1,7 +1,7 @@
 {
   "name": "@kotaitos/codemorph",
   "version": "0.1.0",
-  "description": "Private local Word Map for Japanese and English Markdown in Git repositories",
+  "description": "Private local multilingual Word Map for Markdown in Git repositories",
   "license": "MIT",
   "type": "module",
   "bin": {

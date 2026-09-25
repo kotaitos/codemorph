@@ -4,10 +4,10 @@ Word MapはReactとD3で描画します。TypeScriptのNode.jsサーバーはcor
 
 開発中はリポジトリのルートで`mise run dev`を実行し、`http://127.0.0.1:5173`を開きます。現在のGitリポジトリの解析結果を読み、画面の変更を自動反映します。別の対象は`mise run dev -- /path/to/repository`で指定できます。
 
-語の大きさは頻度、色は言語、透明度はTF-IDFです。拡大時にラベルやTODO等の印を増やし、選択語の類似語・同じ正規形の表記を線で表示します。詳細には共起語と出現箇所が並びます。
+語の大きさは頻度、色は判別可能な言語または文字体系、明るさはTF-IDFです。ラベルの衝突を避け、文字体系ごとの絞り込み、検索、拡大・縮小、全体表示を提供します。選択語の類似語・同じ正規形の表記を線で表示し、詳細には共起語と出現箇所を示します。画面の固定文言は日本語と英語で切り替えられます。
 
 ## English
 
-React and D3 render the Word Map. The TypeScript Node.js server opens the core SQLite output read-only and exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. Built files in `ui/dist/` are bundled in the npm package. Word size encodes frequency, color encodes language, and opacity encodes TF-IDF. Zoom reveals labels and TODO markers; selection draws relations and shows co-occurring words and occurrences.
+React and D3 render the Word Map. The TypeScript Node.js server opens the core SQLite output read-only and exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. Built files in `ui/dist/` are bundled in the npm package. Word size encodes frequency, color encodes an identifiable language or script, and brightness encodes TF-IDF. Labels avoid collisions; script filters, search, zoom, and reset support navigation. Selection draws relations and shows co-occurring words and occurrences. All fixed UI text switches between Japanese and English.
 
 For UI development, run `mise run dev` from the repository root and open `http://127.0.0.1:5173`. It reads the current Git repository's analysis results and reloads UI changes. Pass another target with `mise run dev -- /path/to/repository`.

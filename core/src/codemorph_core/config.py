@@ -1,5 +1,6 @@
 """Strict user configuration and defaults."""
 
+import re
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -26,7 +27,7 @@ exclude:
   - ".codemorph/**"
   - "**/node_modules/**"
 languages:
-  natural: [ja, en]
+  natural: [all]
 stopwords:
   ja: []
   en: []
@@ -47,19 +48,37 @@ class StrictConfigModel(BaseModel):
 
 
 class LanguagesConfig(StrictConfigModel):
-    natural: list[Literal["ja", "en"]] = Field(min_length=1)
+    natural: list[NonEmptyString] = Field(min_length=1)
 
     @field_validator("natural")
     @classmethod
     def unique_languages(cls, value: list[str]) -> list[str]:
         if len(value) != len(set(value)):
             raise ValueError("languages.natural must not contain duplicates")
+        if "all" in value and len(value) != 1:
+            raise ValueError("languages.natural: all must be used alone")
+        for language in value:
+            if language != "all" and not re.fullmatch(
+                r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", language
+            ):
+                raise ValueError(f"invalid language tag: {language}")
         return value
 
 
 class StopwordsConfig(StrictConfigModel):
-    ja: list[NonEmptyString]
-    en: list[NonEmptyString]
+    ja: list[NonEmptyString] = Field(default_factory=list)
+    en: list[NonEmptyString] = Field(default_factory=list)
+    words: dict[str, list[NonEmptyString]] = Field(default_factory=dict)
+
+    @field_validator("words")
+    @classmethod
+    def valid_languages(cls, value: dict[str, list[str]]) -> dict[str, list[str]]:
+        for language in value:
+            if language != "all" and not re.fullmatch(
+                r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", language
+            ):
+                raise ValueError(f"invalid stopword language: {language}")
+        return value
 
 
 class CooccurrenceConfig(StrictConfigModel):
