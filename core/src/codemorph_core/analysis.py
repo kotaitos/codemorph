@@ -1,34 +1,35 @@
-"""Analyze local Markdown and atomically publish a SQLite Word Map."""
+"""Analyze supported local sources and atomically publish a SQLite Word Map."""
 
 import json
 import logging
 import math
 import sqlite3
 from collections import Counter
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 from huggingface_hub import snapshot_download
 from model2vec import StaticModel
+from pydantic import BaseModel, ConfigDict, Field
 from umap import UMAP
 
 from .config import AnalysisConfig, load_config
-from .gitfiles import markdown_files, repository_root
-from .markdown import prose_blocks
+from .gitfiles import repository_files, repository_root
+from .sources import MarkdownSource, SourceAdapter
 from .tokenize import WordTokenizer, sentence_units
 
 LOGGER = logging.getLogger(__name__)
 MODEL_ID = "minishlab/potion-multilingual-128M"
 MODEL_REVISION = "73908c3438cf03b6a01bcb9611d62b23d0726f08"
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 
 
-@dataclass(frozen=True)
-class AnalysisResult:
+class AnalysisResult(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
     database: Path
-    documents: int
-    tokens: int
+    documents: int = Field(ge=0)
+    tokens: int = Field(ge=0)
     warnings: tuple[str, ...]
 
 
@@ -72,7 +73,8 @@ def _schema(connection: sqlite3.Connection) -> None:
         PRAGMA foreign_keys = ON;
         CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE documents (
-          id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE
+          id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE,
+          kind TEXT NOT NULL
         );
         CREATE TABLE tokens (
           id INTEGER PRIMARY KEY, surface TEXT NOT NULL, language TEXT NOT NULL,
@@ -101,7 +103,12 @@ def _schema(connection: sqlite3.Connection) -> None:
     )
 
 
-def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
+def analyze_repository(
+    path: Path,
+    *,
+    embedder=_vectors,
+    adapters: tuple[SourceAdapter, ...] = (MarkdownSource(),),
+) -> AnalysisResult:
     """Read the selected Git files and write a complete SQLite snapshot.
 
     The embedding function is injectable for deterministic tests. Text is only
@@ -109,16 +116,20 @@ def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
     """
     root = repository_root(path)
     config: AnalysisConfig = load_config(root / "codemorph.yml")
-    files = markdown_files(root, config)
+    files = [
+        (file, adapter)
+        for file in repository_files(root, config)
+        if (adapter := next((item for item in adapters if item.accepts(file)), None)) is not None
+    ]
     tokenizer = WordTokenizer(config)
     frequency: Counter[tuple[str, str]] = Counter()
     document_frequency: Counter[tuple[str, str]] = Counter()
     attributes: dict[tuple[str, str], tuple[str, str, bool]] = {}
     occurrences: list[tuple[tuple[str, str], int, int, str]] = []
     cooccurrences: Counter[tuple[tuple[str, str], tuple[str, str]]] = Counter()
-    documents: list[str] = []
+    documents: list[tuple[str, str]] = []
     warnings: list[str] = []
-    for file in files:
+    for file, adapter in files:
         relative = file.relative_to(root).as_posix()
         try:
             source = file.read_text(encoding="utf-8")
@@ -128,9 +139,9 @@ def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
             warnings.append(warning)
             continue
         document_id = len(documents) + 1
-        documents.append(relative)
+        documents.append((relative, adapter.kind))
         seen_in_document: set[tuple[str, str]] = set()
-        for block in prose_blocks(source):
+        for block in adapter.blocks(source):
             block_units = (
                 [(block.text, 0)]
                 if config.analysis.cooccurrence.unit == "paragraph"
@@ -180,8 +191,8 @@ def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
             ],
         )
         connection.executemany(
-            "INSERT INTO documents VALUES (?, ?)",
-            [(index, name) for index, name in enumerate(documents, 1)],
+            "INSERT INTO documents VALUES (?, ?, ?)",
+            [(index, name, kind) for index, (name, kind) in enumerate(documents, 1)],
         )
         for index, key in enumerate(keys):
             normal, lemma, marked = attributes[key]
@@ -241,4 +252,9 @@ def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
         raise
     connection.close()
     pending.replace(database)
-    return AnalysisResult(database, len(documents), len(keys), tuple(warnings))
+    return AnalysisResult(
+        database=database,
+        documents=len(documents),
+        tokens=len(keys),
+        warnings=tuple(warnings),
+    )

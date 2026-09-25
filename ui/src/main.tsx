@@ -1,49 +1,31 @@
 import * as d3 from "d3";
-import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
-import { createRoot } from "react-dom/client";
-import { languageLabel, messages, type UiLocale } from "./i18n";
-import "./style.css";
 import {
+  StrictMode,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createRoot } from "react-dom/client";
+import { DetailPanel } from "./DetailPanel";
+import { ExplorerPanel } from "./ExplorerPanel";
+import { languageLabel, messages, type UiLocale } from "./i18n";
+import { Icon } from "./icons";
+import type { Detail, Summary, Token } from "./types";
+import {
+  fitMapPositions,
   languageColor,
+  layoutLabels,
+  markerScale,
   pointOpacity,
   pointRadius,
-  visibleLabels,
 } from "./visuals";
-
-type Token = {
-  id: number;
-  surface: string;
-  language: string;
-  normal: string;
-  frequency: number;
-  tfidf: number;
-  x: number;
-  y: number;
-  marked: number;
-};
-type Related = {
-  id: number;
-  surface: string;
-  language: string;
-  score?: number;
-  count?: number;
-};
-type Detail = {
-  token: Token;
-  similar: Related[];
-  variants: Related[];
-  cooccurring: Related[];
-  occurrences: { id: number; path: string; line: number; snippet: string }[];
-};
-type Summary = {
-  documents: number;
-  tokens: number;
-  occurrences: number;
-  analyzed: boolean;
-};
-
-const WIDTH = 1200;
-const HEIGHT = 720;
+import "./style.css";
+import "./styles/explorer.css";
+import "./styles/map.css";
+import "./styles/detail.css";
+import "./styles/responsive.css";
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -60,16 +42,19 @@ function App() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [search, setSearch] = useState("");
+  const [focusId, setFocusId] = useState<number | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<number>();
   const [transform, setTransform] = useState(d3.zoomIdentity);
+  const [mapSize, setMapSize] = useState({ width: 1200, height: 720 });
   const [error, setError] = useState("");
+  const mapShell = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const zoom = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectionRequest = useRef(0);
   const t = messages[locale];
   const formatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const { width: WIDTH, height: HEIGHT } = mapSize;
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -87,6 +72,24 @@ function App() {
       .catch((cause) => setError(String(cause)));
   }, []);
 
+  useLayoutEffect(() => {
+    const element = mapShell.current;
+    if (!element) return;
+    const measure = () => {
+      const width = Math.max(1, element.clientWidth);
+      const height = Math.max(1, element.clientHeight);
+      setMapSize((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!svg.current) return;
     const behavior = d3
@@ -100,34 +103,17 @@ function App() {
     };
   }, []);
 
-  const positions = useMemo(() => {
-    if (tokens.length === 0) return new Map<number, { x: number; y: number }>();
-    const xDomain = d3.extent(tokens, (token) => token.x) as [number, number];
-    const yDomain = d3.extent(tokens, (token) => token.y) as [number, number];
-    const x = d3
-      .scaleLinear()
-      .domain(xDomain[0] === xDomain[1] ? [-1, 1] : xDomain)
-      .range([115, WIDTH - 115]);
-    const y = d3
-      .scaleLinear()
-      .domain(yDomain[0] === yDomain[1] ? [-1, 1] : yDomain)
-      .range([HEIGHT - 105, 105]);
-    return new Map(
-      tokens.map((token) => [token.id, { x: x(token.x), y: y(token.y) }]),
-    );
-  }, [tokens]);
-  const languageCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const token of tokens)
-      counts.set(token.language, (counts.get(token.language) ?? 0) + 1);
-    return [...counts].sort((a, b) => b[1] - a[1]);
-  }, [tokens]);
+  const positions = useMemo(
+    () => fitMapPositions(tokens, WIDTH, HEIGHT),
+    [tokens, WIDTH, HEIGHT],
+  );
   const displayed = useMemo(
     () =>
       language ? tokens.filter((token) => token.language === language) : tokens,
     [tokens, language],
   );
   const selectedId = detail?.token.id;
+  const pointScale = markerScale(WIDTH, HEIGHT, displayed.length);
   const relatedIds = useMemo(
     () =>
       new Set(
@@ -143,28 +129,31 @@ function App() {
   );
   const labels = useMemo(
     () =>
-      visibleLabels(
-        displayed,
+      layoutLabels(
+        detail
+          ? displayed.filter((token) => relatedIds.has(token.id))
+          : displayed,
         positions,
         transform,
         WIDTH,
         HEIGHT,
+        pointScale,
         selectedId,
         hoverId,
       ),
-    [displayed, positions, transform, selectedId, hoverId],
+    [
+      displayed,
+      detail,
+      relatedIds,
+      positions,
+      transform,
+      selectedId,
+      hoverId,
+      WIDTH,
+      HEIGHT,
+      pointScale,
+    ],
   );
-  const matching = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
-    if (!query) return [];
-    return tokens
-      .filter((token) => token.surface.toLocaleLowerCase().includes(query))
-      .sort(
-        (a, b) =>
-          b.frequency - a.frequency || a.surface.localeCompare(b.surface),
-      )
-      .slice(0, 8);
-  }, [search, tokens]);
   const maxTfidf = Math.max(1, ...tokens.map((token) => token.tfidf));
   const hovered = tokens.find((token) => token.id === hoverId);
   const hoverPosition = hovered ? positions.get(hovered.id) : undefined;
@@ -177,38 +166,57 @@ function App() {
       ]
     : [];
 
+  useEffect(() => {
+    if (
+      focusId === null ||
+      detail?.token.id !== focusId ||
+      !svg.current ||
+      !zoom.current
+    )
+      return;
+    const point = positions.get(focusId);
+    if (!point) return;
+    d3.select(svg.current)
+      .interrupt()
+      .transition()
+      .duration(
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 400,
+      )
+      .call(
+        zoom.current.transform,
+        d3.zoomIdentity
+          .translate(WIDTH / 2 - point.x * 2.6, HEIGHT / 2 - point.y * 2.6)
+          .scale(2.6),
+      );
+  }, [focusId, detail?.token.id, positions, WIDTH, HEIGHT]);
+
   function select(id: number, focus = false) {
+    setFocusId(focus ? id : null);
     const request = ++selectionRequest.current;
     getJson<Detail>(`/api/tokens/${id}`)
       .then((next) => {
         if (request === selectionRequest.current) setDetail(next);
       })
       .catch((cause) => setError(String(cause)));
-    if (focus && svg.current && zoom.current) {
-      const point = positions.get(id);
-      if (point) {
-        d3.select(svg.current)
-          .transition()
-          .duration(400)
-          .call(
-            zoom.current.transform,
-            d3.zoomIdentity
-              .translate(WIDTH / 2 - point.x * 2.6, HEIGHT / 2 - point.y * 2.6)
-              .scale(2.6),
-          );
-      }
-    }
+  }
+
+  function clearSelection() {
+    ++selectionRequest.current;
+    setDetail(null);
+    setFocusId(null);
   }
 
   function reset() {
-    ++selectionRequest.current;
-    setDetail(null);
-    setSearch("");
+    clearSelection();
     setLanguage(null);
     if (svg.current && zoom.current)
       d3.select(svg.current)
         .transition()
-        .duration(350)
+        .duration(
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? 0
+            : 350,
+        )
         .call(zoom.current.transform, d3.zoomIdentity);
   }
 
@@ -216,51 +224,29 @@ function App() {
     if (svg.current && zoom.current)
       d3.select(svg.current)
         .transition()
-        .duration(250)
+        .duration(
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? 0
+            : 250,
+        )
         .call(zoom.current.scaleBy, factor);
   }
 
   function filterLanguage(next: string | null) {
     setLanguage(next);
-    if (next && detail?.token.language !== next) setDetail(null);
+    if (next && detail?.token.language !== next) clearSelection();
   }
 
-  function relatedList(items: Related[], metric: "score" | "count" | null) {
-    return items.length ? (
-      <div className="chips">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => {
-              filterLanguage(null);
-              select(item.id, true);
-            }}
-          >
-            <span
-              className="chip-dot"
-              style={{ backgroundColor: languageColor(item.language) }}
-            />
-            {item.surface}
-            {metric && (
-              <small>
-                {metric === "score" ? item.score?.toFixed(2) : item.count}
-              </small>
-            )}
-          </button>
-        ))}
-      </div>
-    ) : (
-      <p className="muted">{t.none}</p>
-    );
+  function chooseFromPanel(id: number) {
+    filterLanguage(null);
+    select(id, true);
   }
 
   return (
     <div className="app">
       <header className="header">
         <div className="brand">
-          <span className="brand-mark">✳</span>
-          <span>codemorph</span>
+          <span className="brand-name">codemorph</span>
           <span className="brand-divider" />
           <span className="brand-subtitle">Word Map</span>
         </div>
@@ -286,80 +272,52 @@ function App() {
           </fieldset>
         </div>
       </header>
-      <main className="workspace">
-        <section className="map-column">
-          <div className="toolbar">
+      <main className={`workspace ${detail ? "has-detail" : ""}`}>
+        <ExplorerPanel
+          locale={locale}
+          summary={summary}
+          tokens={tokens}
+          language={language}
+          onLanguage={filterLanguage}
+          onSelect={chooseFromPanel}
+        />
+        <section className="map-column" aria-label={t.graph}>
+          <div className="map-heading">
             <div>
-              <p className="eyebrow">{t.explore}</p>
-              <h1>Word Map</h1>
-              <p className="intro">{t.intro}</p>
+              <p className="eyebrow">{t.graph}</p>
+              <h2>{detail ? t.connections : t.choose}</h2>
+              <p>{detail ? t.connectionsHelp : t.chooseHelp}</p>
             </div>
-            <button type="button" className="reset" onClick={reset}>
-              {t.reset} <span aria-hidden="true">↗</span>
+            <button type="button" className="fit-button" onClick={reset}>
+              <Icon name="fit" />
+              <span>{t.reset}</span>
             </button>
           </div>
-          <div className="search-wrap">
-            <span className="search-icon" aria-hidden="true">
-              ⌕
-            </span>
-            <input
-              aria-label={t.search}
-              placeholder={`${t.search}…`}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && matching[0]) {
-                  filterLanguage(null);
-                  select(matching[0].id, true);
-                  setSearch("");
-                }
-                if (event.key === "Escape") setSearch("");
-              }}
-            />
-            {matching.length > 0 && (
-              <div className="search-results">
-                {matching.map((token) => (
-                  <button
-                    type="button"
-                    key={token.id}
-                    onClick={() => {
-                      filterLanguage(null);
-                      select(token.id, true);
-                      setSearch("");
-                    }}
-                  >
-                    <span
-                      className="language-dot"
-                      style={{ backgroundColor: languageColor(token.language) }}
-                    />
-                    <span>{token.surface}</span>
-                    <small>{formatter.format(token.frequency)}</small>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="map-shell">
+          <div className="map-shell" ref={mapShell}>
             <div className="map-topline">
-              <span>{t.graph}</span>
               <span>{t.graphHint}</span>
+              <span>
+                {formatter.format(displayed.length)} {t.words}
+              </span>
             </div>
-            <div className="zoom-controls">
+            <fieldset className="zoom-controls" aria-label={t.graph}>
               <button
                 type="button"
                 onClick={() => changeZoom(1.6)}
                 aria-label={t.zoomIn}
+                title={t.zoomIn}
               >
-                +
+                <Icon name="plus" />
               </button>
               <button
                 type="button"
                 onClick={() => changeZoom(1 / 1.6)}
                 aria-label={t.zoomOut}
+                title={t.zoomOut}
               >
-                −
+                <Icon name="minus" />
               </button>
-            </div>
+            </fieldset>
             {error && (
               <div className="empty" role="alert">
                 <h2>{t.graphError}</h2>
@@ -368,11 +326,9 @@ function App() {
             )}
             {!error && summary && !summary.analyzed && (
               <div className="empty">
-                <span className="empty-icon">✳</span>
                 <h2>{t.emptyTitle}</h2>
                 <p>{t.emptyHelp}</p>
                 <code>npx @kotaitos/codemorph init</code>
-                <br />
                 <code>npx @kotaitos/codemorph analyze</code>
               </div>
             )}
@@ -389,8 +345,16 @@ function App() {
               aria-label={t.graph}
             >
               <g className="map-guides">
-                <circle cx={WIDTH / 2} cy={HEIGHT / 2} r="170" />
-                <circle cx={WIDTH / 2} cy={HEIGHT / 2} r="335" />
+                <circle
+                  cx={WIDTH / 2}
+                  cy={HEIGHT / 2}
+                  r={Math.min(WIDTH, HEIGHT) * 0.27}
+                />
+                <circle
+                  cx={WIDTH / 2}
+                  cy={HEIGHT / 2}
+                  r={Math.min(WIDTH, HEIGHT) * 0.47}
+                />
               </g>
               <g transform={transform.toString()}>
                 {detail &&
@@ -413,7 +377,8 @@ function App() {
                 {displayed.map((token) => {
                   const point = positions.get(token.id);
                   if (!point) return null;
-                  const radius = pointRadius(token.frequency);
+                  const radius = pointRadius(token.frequency) * pointScale;
+                  const visibleRadius = radius / transform.k;
                   const selected = selectedId === token.id;
                   const active = relatedIds.has(token.id);
                   const dim =
@@ -425,6 +390,8 @@ function App() {
                       href={`#word-${token.id}`}
                       onMouseEnter={() => setHoverId(token.id)}
                       onMouseLeave={() => setHoverId(undefined)}
+                      onFocus={() => setHoverId(token.id)}
+                      onBlur={() => setHoverId(undefined)}
                       onClick={(event) => {
                         event.preventDefault();
                         select(token.id);
@@ -435,31 +402,31 @@ function App() {
                         <circle
                           cx={point.x}
                           cy={point.y}
-                          r={radius + 11}
+                          r={(radius + 11) / transform.k}
                           className="halo"
                         />
                       )}
                       <circle
                         cx={point.x}
                         cy={point.y}
-                        r={Math.max(radius + 6, 13)}
+                        r={Math.max(radius + 6, 13) / transform.k}
                         fill="transparent"
                       />
                       <circle
                         cx={point.x}
                         cy={point.y}
-                        r={radius}
+                        r={visibleRadius}
                         className="point"
                         fill={languageColor(token.language)}
                         opacity={
-                          dim ? 0.13 : pointOpacity(token.tfidf, maxTfidf)
+                          dim ? 0.07 : pointOpacity(token.tfidf, maxTfidf)
                         }
                       />
                       {token.marked > 0 && transform.k >= 1.6 && (
                         <circle
-                          cx={point.x + radius}
-                          cy={point.y - radius}
-                          r="3"
+                          cx={point.x + visibleRadius}
+                          cy={point.y - visibleRadius}
+                          r={3 / transform.k}
                           className="marked"
                         />
                       )}
@@ -471,15 +438,14 @@ function App() {
                 {displayed
                   .filter((token) => labels.has(token.id))
                   .map((token) => {
-                    const point = positions.get(token.id);
-                    if (!point) return null;
-                    const x = point.x * transform.k + transform.x;
-                    const y = point.y * transform.k + transform.y;
+                    const placement = labels.get(token.id);
+                    if (!placement) return null;
                     return (
                       <text
                         key={token.id}
-                        x={x + pointRadius(token.frequency) * transform.k + 7}
-                        y={y + 4}
+                        x={placement.x}
+                        y={placement.y}
+                        textAnchor={placement.anchor}
                         className={`word-label ${selectedId === token.id ? "active" : ""} ${selectedId !== undefined && !relatedIds.has(token.id) ? "dim" : ""}`}
                       >
                         {token.surface}
@@ -506,114 +472,18 @@ function App() {
             <div className="map-caption">{t.sourceHint}</div>
           </div>
           <div className="map-footer">
-            <fieldset className="language-filters" aria-label={t.languages}>
-              <button
-                type="button"
-                className={!language ? "active" : ""}
-                onClick={() => filterLanguage(null)}
-              >
-                {t.allLanguages}{" "}
-                <small>{formatter.format(tokens.length)}</small>
-              </button>
-              {languageCounts.map(([code, count]) => (
-                <button
-                  type="button"
-                  key={code}
-                  className={language === code ? "active" : ""}
-                  onClick={() => filterLanguage(code)}
-                >
-                  <span
-                    className="language-dot"
-                    style={{ backgroundColor: languageColor(code) }}
-                  />
-                  {languageLabel(code, locale)}{" "}
-                  <small>{formatter.format(count)}</small>
-                </button>
-              ))}
-            </fieldset>
-            <p>{t.sizeHint}</p>
+            <span>{t.sizeHint}</span>
+            <span>{t.marked}</span>
           </div>
         </section>
-        <aside className="sidebar">
-          <div className="sidebar-section overview">
-            <p className="eyebrow">{t.overview}</p>
-            <div className="stats">
-              <div>
-                <strong>{formatter.format(summary?.documents ?? 0)}</strong>
-                <span>{t.files}</span>
-              </div>
-              <div>
-                <strong>{formatter.format(summary?.tokens ?? 0)}</strong>
-                <span>{t.words}</span>
-              </div>
-              <div>
-                <strong>{formatter.format(summary?.occurrences ?? 0)}</strong>
-                <span>{t.uses}</span>
-              </div>
-            </div>
-          </div>
-          {detail ? (
-            <div className="sidebar-section detail">
-              <div className="detail-heading">
-                <p className="eyebrow">{t.selected}</p>
-                <button
-                  type="button"
-                  onClick={() => setDetail(null)}
-                  aria-label={t.clear}
-                >
-                  ×
-                </button>
-              </div>
-              <h2>{detail.token.surface}</h2>
-              <div className="token-meta">
-                <span
-                  className="language-dot"
-                  style={{
-                    backgroundColor: languageColor(detail.token.language),
-                  }}
-                />
-                {languageLabel(detail.token.language, locale)}
-                <span>·</span>
-                {t.frequency} {formatter.format(detail.token.frequency)}
-                <span>·</span>
-                {t.tfidf} {detail.token.tfidf.toFixed(2)}
-              </div>
-              <section>
-                <h3>{t.related}</h3>
-                <p className="explanation">{t.similarityHint}</p>
-                {relatedList(detail.similar, "score")}
-              </section>
-              <section>
-                <h3>{t.variants}</h3>
-                {relatedList(detail.variants, null)}
-              </section>
-              <section>
-                <h3>{t.cooccurring}</h3>
-                {relatedList(detail.cooccurring, "count")}
-              </section>
-              <section>
-                <h3>{t.occurrences}</h3>
-                <div className="occurrences">
-                  {detail.occurrences.map((item) => (
-                    <div key={item.id}>
-                      <div className="file-path">
-                        {item.path}:{item.line}
-                      </div>
-                      <p>{item.snippet}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className="sidebar-section hint">
-              <div className="hint-symbol">↖</div>
-              <h2>{t.choose}</h2>
-              <p>{t.chooseHelp}</p>
-            </div>
-          )}
-          <div className="sidebar-footer">{t.stored}</div>
-        </aside>
+        {detail && (
+          <DetailPanel
+            detail={detail}
+            locale={locale}
+            onClose={clearSelection}
+            onSelect={chooseFromPanel}
+          />
+        )}
       </main>
     </div>
   );

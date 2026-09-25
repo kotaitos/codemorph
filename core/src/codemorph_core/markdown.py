@@ -1,20 +1,16 @@
 """Extract prose blocks from Markdown while keeping approximate source lines."""
 
-from dataclasses import dataclass
-
 from markdown_it import MarkdownIt
 
+from .blocks import TextBlock
 
-@dataclass(frozen=True)
-class ProseBlock:
-    text: str
-    start_line: int
+ProseBlock = TextBlock
 
 
 _PARSER = MarkdownIt("commonmark")
 
 
-def prose_blocks(source: str) -> list[ProseBlock]:
+def prose_blocks(source: str) -> list[TextBlock]:
     # Front matter is not prose. Preserve line numbers after removing it.
     lines = source.splitlines(keepends=True)
     if lines and lines[0].strip() == "---":
@@ -23,7 +19,7 @@ def prose_blocks(source: str) -> list[ProseBlock]:
                 lines[: end + 1] = ["\n"] * (end + 1)
                 break
     tokens = _PARSER.parse("".join(lines))
-    blocks: list[ProseBlock] = []
+    blocks: list[TextBlock] = []
     for token in tokens:
         if token.type != "inline" or token.map is None:
             continue
@@ -35,5 +31,5 @@ def prose_blocks(source: str) -> list[ProseBlock]:
                 parts.append("\n")
         text = "".join(parts)
         if text.strip():
-            blocks.append(ProseBlock(text=text, start_line=token.map[0] + 1))
+            blocks.append(TextBlock(text=text, start_line=token.map[0] + 1))
     return blocks

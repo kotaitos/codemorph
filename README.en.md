@@ -2,7 +2,7 @@
 
 [日本語](README.md)
 
-codemorph analyzes Markdown in a Git repository locally and explores multilingual word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service.
+codemorph analyzes Markdown in a Git repository locally and explores multilingual word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service. Markdown is currently the only supported input format.
 
 **Release status:** The app is implemented, but `@kotaitos/codemorph` is not yet published to npm. The `npx` commands below will work after publication. For this checkout, run `mise run setup`, `mise run build`, then `node cli/bin/codemorph.mjs`.
 
@@ -11,6 +11,8 @@ codemorph analyzes Markdown in a Git repository locally and explores multilingua
 - [core](core/README.md): Python Markdown analysis, statistics, and SQLite output
 - [cli](cli/README.md): npm launcher and `init`, `analyze`, `serve`
 - [ui](ui/README.md): read-only HTTP API and React/D3 Word Map
+
+The [design system](DESIGN.md) records the interface colors, typography, spacing, and interaction rules.
 
 The core has no HTTP or UI dependency. Model files and results are stored in `.codemorph/` in the target repository.
 
@@ -34,7 +36,9 @@ The first analysis downloads a pinned `minishlab/potion-multilingual-128M` model
 
 Eligible files are tracked or non-ignored untracked Markdown matching `include` but not `exclude`. An unreadable UTF-8 file produces a warning, while other files continue.
 
-The map retains distinct surface forms and places all words at approximate UMAP coordinates. Select a word for cosine similarity from the original vectors, normalized variants, co-occurring words, source paths, lines, and excerpts. Size shows frequency, color shows identifiable language or script, and brightness shows TF-IDF. Collision-aware labels, script filters, search, zoom controls, and reset help navigate the map. UI text switches between Japanese and English. With `all`, words in scripts shared by several languages use labels such as `und-Latn`; the word alone does not establish its language. Japanese runs containing kana use Sudachi. Segmentation and similarity quality vary by language; the embedding model was trained on 101 languages. The read-only API exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. The server binds only to `127.0.0.1`.
+The map retains distinct surface forms and places all words at approximate UMAP coordinates. Select a word for cosine similarity from the original vectors, normalized variants, co-occurring words, source paths, lines, and excerpts. Size shows frequency, color shows identifiable language or script, and brightness shows TF-IDF. A map sized to its viewport, collision-aware labels, script filters, search, zoom controls, and reset help navigation. On narrow screens, selected word details open in a bottom panel. UI text switches between Japanese and English. With `all`, words in scripts shared by several languages use labels such as `und-Latn`; the word alone does not establish its language. Japanese runs containing kana use Sudachi. Segmentation and similarity quality vary by language; the embedding model was trained on 101 languages. The read-only API exposes `GET /api/summary`, `/api/map`, and `/api/tokens/{id}`. The summary includes counts by source kind. The server binds only to `127.0.0.1`.
+
+For future program analysis, the core accepts source adapters and stores a kind for each document. Code parsing and identifier extraction are not implemented yet. A new input format will need an adapter and an `include` pattern.
 
 ## Development
 

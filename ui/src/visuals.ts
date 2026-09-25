@@ -10,6 +10,46 @@ export type VisualToken = {
 
 export type ViewTransform = { x: number; y: number; k: number };
 
+export function fitMapPositions<T extends { id: number; x: number; y: number }>(
+  tokens: T[],
+  width: number,
+  height: number,
+): Map<number, { x: number; y: number }> {
+  if (tokens.length === 0) return new Map();
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const token of tokens) {
+    minX = Math.min(minX, token.x);
+    maxX = Math.max(maxX, token.x);
+    minY = Math.min(minY, token.y);
+    maxY = Math.max(maxY, token.y);
+  }
+  const spanX = maxX - minX;
+  const spanY = maxY - minY;
+  const paddingX = Math.min(80, width * 0.12);
+  const paddingY = Math.min(80, height * 0.12);
+  const scale =
+    spanX === 0 && spanY === 0
+      ? 1
+      : Math.min(
+          (width - 2 * paddingX) / Math.max(spanX, 1e-9),
+          (height - 2 * paddingY) / Math.max(spanY, 1e-9),
+        );
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  return new Map(
+    tokens.map((token) => [
+      token.id,
+      {
+        x: width / 2 + (token.x - centerX) * scale,
+        y: height / 2 - (token.y - centerY) * scale,
+      },
+    ]),
+  );
+}
+
 export function pointRadius(frequency: number): number {
   return Math.min(11, 3 + Math.sqrt(Math.max(0, frequency)) * 1.55);
 }
@@ -38,15 +78,30 @@ export function languageColor(language: string): string {
   return `hsl(${hash % 360} 69% 72%)`;
 }
 
-export function visibleLabels<T extends VisualToken>(
+export function markerScale(
+  width: number,
+  height: number,
+  count: number,
+): number {
+  if (count === 0) return 1;
+  return Math.max(
+    0.55,
+    Math.min(1, Math.sqrt((width * height) / (count * 700))),
+  );
+}
+
+export type LabelPlacement = { x: number; y: number; anchor: "start" | "end" };
+
+export function layoutLabels<T extends VisualToken>(
   tokens: T[],
   positions: Map<number, { x: number; y: number }>,
   transform: ViewTransform,
   width: number,
   height: number,
+  scale: number,
   activeId?: number,
   hoverId?: number,
-): Set<number> {
+): Map<number, LabelPlacement> {
   const ordered = tokens
     .filter((token) => positions.has(token.id))
     .sort((a, b) => {
@@ -58,42 +113,71 @@ export function visibleLabels<T extends VisualToken>(
         token.tfidf;
       return priority(b) - priority(a) || a.id - b.id;
     });
+  const baseLimit = Math.max(
+    8,
+    Math.min(36, Math.floor((width * height) / 20000)),
+  );
   const maximum = Math.min(
     ordered.length,
-    transform.k >= 2.5 ? 160 : transform.k >= 1.5 ? 80 : 36,
+    Math.floor(
+      baseLimit * (transform.k >= 2.5 ? 3 : transform.k >= 1.5 ? 2 : 1),
+    ),
   );
-  const boxes: { left: number; top: number; right: number; bottom: number }[] =
-    [];
-  const result = new Set<number>();
+  const boxes: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    cx: number;
+    cy: number;
+  }[] = [];
+  const result = new Map<number, LabelPlacement>();
   for (const token of ordered) {
     if (result.size >= maximum) break;
     const position = positions.get(token.id);
     if (!position) continue;
     const x = position.x * transform.k + transform.x;
     const y = position.y * transform.k + transform.y;
-    if (x < 12 || x > width - 12 || y < 12 || y > height - 12) continue;
-    const labelX = x + pointRadius(token.frequency) * transform.k + 7;
+    if (x < 10 || x > width - 10 || y < 46 || y > height - 34) continue;
+    const estimatedWidth = Math.min(
+      200,
+      Array.from(token.surface).reduce(
+        (sum, char) => sum + ((char.codePointAt(0) ?? 0) > 0x2e80 ? 13 : 7.5),
+        0,
+      ) + 8,
+    );
+    const gap = pointRadius(token.frequency) * scale + 8;
+    const placeRight = x + gap + estimatedWidth < width - 10;
+    const labelX = placeRight ? x + gap : x - gap;
     const box = {
-      left: labelX - 2,
-      right: labelX + Math.min(200, Array.from(token.surface).length * 9 + 12),
-      top: y - 11,
-      bottom: y + 9,
+      left: placeRight ? labelX : labelX - estimatedWidth,
+      right: placeRight ? labelX + estimatedWidth : labelX,
+      top: y - 12,
+      bottom: y + 10,
+      cx: x,
+      cy: y,
     };
-    if (box.right > width - 8) continue;
+    if (box.left < 10 || box.right > width - 10) continue;
     if (
       token.id !== activeId &&
       token.id !== hoverId &&
       boxes.some(
         (other) =>
-          box.left < other.right &&
-          box.right > other.left &&
-          box.top < other.bottom &&
-          box.bottom > other.top,
+          (box.left < other.right &&
+            box.right > other.left &&
+            box.top < other.bottom &&
+            box.bottom > other.top) ||
+          Math.hypot(box.cx - other.cx, box.cy - other.cy) <
+            (width < 500 ? 48 : 38),
       )
     )
       continue;
     boxes.push(box);
-    result.add(token.id);
+    result.set(token.id, {
+      x: labelX,
+      y: y + 4,
+      anchor: placeRight ? "start" : "end",
+    });
   }
   return result;
 }

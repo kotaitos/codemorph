@@ -17,6 +17,7 @@
     "pyproject.toml",
     "uv.lock",
     "README.md",
+    "DESIGN.md",
     "LICENSE"
   ],
   "engines": {
