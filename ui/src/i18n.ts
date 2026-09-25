@@ -12,7 +12,7 @@ export const messages = {
     graphHint: "ドラッグで移動 · スクロールで拡大",
     zoomIn: "拡大",
     zoomOut: "縮小",
-    select: "選択",
+    pin: "固定",
     emptyTitle: "まだ解析結果がありません",
     emptyHelp: "次のコマンドで設定と解析を実行してください。",
     noWords: "表示できる語がありません",
@@ -34,20 +34,21 @@ export const messages = {
     words: "語",
     uses: "出現",
     selected: "選択した語",
+    preview: "プレビュー",
+    pinHelp: "クリックで固定",
     clear: "選択を解除",
     related: "意味が近い語",
     variants: "同じ正規形の表記",
     cooccurring: "共起語",
     occurrences: "出現箇所",
     none: "なし",
-    choose: "語を選択",
-    chooseHelp: "地図上の点、検索結果、または詳細の関連語から選べます。",
+    choose: "語を探索",
+    chooseHelp:
+      "地図の点にカーソルを合わせて詳細を表示し、クリックで固定できます。",
     connections: "語のつながり",
-    connectionsHelp: "選択語と意味が近い語・別表記を線で示します。",
+    connectionsHelp: "表示中の語と意味が近い語・別表記を線で示します。",
     stored: "解析結果はこの端末に保存されています。",
-    script: "文字",
     marked: "拡大時: TODO / FIXME",
-    occurrencesCount: "出現回数",
   },
   en: {
     uiLanguage: "Interface language",
@@ -60,7 +61,7 @@ export const messages = {
     graphHint: "Drag to pan · scroll to zoom",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
-    select: "Select",
+    pin: "Pin",
     emptyTitle: "No analysis yet",
     emptyHelp: "Run these commands to configure and analyze your repository.",
     noWords: "No words to display",
@@ -84,35 +85,38 @@ export const messages = {
     words: "Words",
     uses: "Uses",
     selected: "Selected word",
+    preview: "Preview",
+    pinHelp: "Click the word to pin",
     clear: "Clear selection",
     related: "Similar words",
     variants: "Other surface forms",
     cooccurring: "Co-occurring words",
     occurrences: "Occurrences",
     none: "None",
-    choose: "Select a word",
-    chooseHelp:
-      "Select a point, a search result, or a related word in the details.",
+    choose: "Explore words",
+    chooseHelp: "Hover over a point to preview details; click to pin them.",
     connections: "Word connections",
     connectionsHelp:
-      "Lines connect the selected word to similar and variant words.",
+      "Lines connect the active word to similar and variant words.",
     stored: "Analysis data is stored on this device.",
-    script: "script",
     marked: "At zoom: TODO / FIXME",
-    occurrencesCount: "Occurrences",
   },
 } as const;
 
 export function languageLabel(code: string, locale: UiLocale): string {
   if (code.startsWith("und-")) {
     const script = code.slice(4);
+    if (script === "Hani")
+      return locale === "ja"
+        ? "漢字（言語未判定）"
+        : "Han script (language unknown)";
     try {
       const name = new Intl.DisplayNames([locale], { type: "script" }).of(
         script,
       );
-      return `${name ?? script} ${messages[locale].script}`;
+      return locale === "ja" ? (name ?? script) : `${name ?? script} script`;
     } catch {
-      return `${script} ${messages[locale].script}`;
+      return locale === "ja" ? script : `${script} script`;
     }
   }
   try {

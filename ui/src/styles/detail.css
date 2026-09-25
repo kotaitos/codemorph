@@ -1,4 +1,10 @@
 .detail-panel {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 350px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -6,6 +12,21 @@
   overflow: hidden;
   border-left: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+.detail-panel.side-left {
+  left: var(--explorer-width);
+  right: auto;
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+.detail-panel.preview {
+  pointer-events: none;
+}
+.pin-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
 }
 .detail-header {
   display: flex;
@@ -95,9 +116,12 @@
   text-align: left;
   font-size: 12px;
 }
-.chips button:hover {
+.chips button:not(:disabled):hover {
   border-color: var(--accent);
   background: var(--accent-surface);
+}
+.chips button:disabled {
+  cursor: default;
 }
 .chips small {
   color: var(--accent);
