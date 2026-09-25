@@ -1,4 +1,4 @@
-"""Find Markdown files in a Git worktree without reading ignored files."""
+"""Find configured files in a Git worktree without reading ignored files."""
 
 import subprocess
 from pathlib import Path
@@ -24,7 +24,7 @@ def repository_root(path: Path) -> Path:
     return Path(result.stdout.strip()).resolve()
 
 
-def markdown_files(root: Path, config: AnalysisConfig) -> list[Path]:
+def repository_files(root: Path, config: AnalysisConfig) -> list[Path]:
     result = subprocess.run(
         ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         capture_output=True,
@@ -38,7 +38,7 @@ def markdown_files(root: Path, config: AnalysisConfig) -> list[Path]:
     for relative in sorted(
         set(result.stdout.decode("utf-8", errors="surrogateescape").split("\0"))
     ):
-        if not relative or not relative.lower().endswith((".md", ".markdown")):
+        if not relative:
             continue
         if not included.match_file(relative) or excluded.match_file(relative):
             continue
@@ -47,3 +47,12 @@ def markdown_files(root: Path, config: AnalysisConfig) -> list[Path]:
             continue
         selected.append(path)
     return selected
+
+
+def markdown_files(root: Path, config: AnalysisConfig) -> list[Path]:
+    """Compatibility helper for callers that only need Markdown sources."""
+    return [
+        path
+        for path in repository_files(root, config)
+        if path.suffix.lower() in {".md", ".markdown"}
+    ]

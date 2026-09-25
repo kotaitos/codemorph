@@ -18,7 +18,7 @@ function openDatabase(): DatabaseSync | null {
     const version = db
       .prepare("SELECT value FROM metadata WHERE key = 'schema_version'")
       .get() as { value: string } | undefined;
-    if (version?.value !== "1")
+    if (version?.value !== "2")
       throw new Error("unsupported database schema; run analyze again");
     return db;
   } catch (error) {
@@ -106,7 +106,14 @@ createServer(async (request, response) => {
               )
               .get() as Row)
           : { documents: 0, tokens: 0, occurrences: 0 };
-        json(response, 200, { ...summary, analyzed: db !== null });
+        json(response, 200, {
+          ...summary,
+          analyzed: db !== null,
+          sources: query(
+            db,
+            "SELECT kind, COUNT(*) AS count FROM documents GROUP BY kind ORDER BY count DESC, kind",
+          ),
+        });
       } else if (pathname === "/api/map") {
         json(response, 200, {
           tokens: query(
@@ -141,7 +148,7 @@ createServer(async (request, response) => {
             ),
             occurrences: query(
               db,
-              "SELECT o.rowid AS id, d.path, o.line, o.snippet FROM occurrences o JOIN documents d ON d.id = o.document_id WHERE o.token_id = ? ORDER BY d.path, o.line LIMIT 100",
+              "SELECT o.rowid AS id, d.path, d.kind, o.line, o.snippet FROM occurrences o JOIN documents d ON d.id = o.document_id WHERE o.token_id = ? ORDER BY d.path, o.line LIMIT 100",
               id,
             ),
           });

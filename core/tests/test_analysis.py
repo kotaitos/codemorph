@@ -7,7 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 from codemorph_core.analysis import analyze_repository
+from codemorph_core.blocks import TextBlock
 from codemorph_core.config import DEFAULT_CONFIG, ConfigError, load_config
+from codemorph_core.sources import MarkdownSource
 from codemorph_core.tokenize import WordTokenizer, sentence_units
 
 
@@ -60,8 +62,9 @@ def test_local_git_markdown_to_sqlite(tmp_path: Path) -> None:
         assert db.execute("SELECT COUNT(*) FROM occurrences").fetchone()[0] > 0
         assert (
             db.execute("SELECT value FROM metadata WHERE key = 'schema_version'").fetchone()[0]
-            == "1"
+            == "2"
         )
+        assert db.execute("SELECT kind FROM documents").fetchone()[0] == "markdown"
 
 
 def test_empty_repository_still_produces_a_database(tmp_path: Path) -> None:
@@ -109,3 +112,26 @@ def test_explicit_language_tag_and_stopwords(tmp_path: Path) -> None:
     )
     words = WordTokenizer(load_config(config)).words("Bonjour français Привет")
     assert [(word.surface, word.language) for word in words] == [("français", "fr")]
+
+
+def test_source_adapter_can_add_a_file_kind(tmp_path: Path) -> None:
+    class ExampleSource:
+        kind = "example"
+
+        def accepts(self, path: Path) -> bool:
+            return path.suffix == ".example"
+
+        def blocks(self, source: str) -> list[TextBlock]:
+            return [TextBlock(text=source, start_line=1)]
+
+    root = _repository(tmp_path)
+    config = root / "codemorph.yml"
+    config.write_text(
+        DEFAULT_CONFIG.replace('  - "**/*.md"', '  - "**/*.md"\n  - "**/*.example"'),
+        encoding="utf-8",
+    )
+    (root / "sample.example").write_text("A future source adapter", encoding="utf-8")
+    result = analyze_repository(root, embedder=_embed, adapters=(MarkdownSource(), ExampleSource()))
+    with sqlite3.connect(result.database) as db:
+        assert db.execute("SELECT kind FROM documents").fetchone()[0] == "example"
+        assert db.execute("SELECT COUNT(*) FROM tokens").fetchone()[0] > 0

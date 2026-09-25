@@ -2,9 +2,9 @@
 
 import re
 import unicodedata
-from dataclasses import dataclass
 
 from icu import BreakIterator, Locale, Script
+from pydantic import BaseModel, ConfigDict, Field
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from sudachipy import dictionary, tokenizer
 
@@ -15,13 +15,14 @@ _KANA = re.compile(r"[ぁ-ゟ゠-ヿー]")
 _CONTENT_POS = {"名詞", "動詞", "形容詞", "副詞", "感動詞"}
 
 
-@dataclass(frozen=True)
-class Word:
+class Word(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
     surface: str
     language: str
     normal: str
     lemma: str
-    offset: int
+    offset: int = Field(ge=0)
     marked: bool
 
 
@@ -116,7 +117,14 @@ class WordTokenizer:
                     if {surface, lemma, normal} & self.japanese_stopwords:
                         continue
                     result.append(
-                        Word(surface, "ja", normal, lemma, run.start() + morpheme.begin(), False)
+                        Word(
+                            surface=surface,
+                            language="ja",
+                            normal=normal,
+                            lemma=lemma,
+                            offset=run.start() + morpheme.begin(),
+                            marked=False,
+                        )
                     )
 
         offsets = _offsets(text)
@@ -149,6 +157,13 @@ class WordTokenizer:
             ) or normal in self.other_stopwords.get("all", set()):
                 continue
             result.append(
-                Word(surface, language, normal, normal, left, normal in {"todo", "fixme"})
+                Word(
+                    surface=surface,
+                    language=language,
+                    normal=normal,
+                    lemma=normal,
+                    offset=left,
+                    marked=normal in {"todo", "fixme"},
+                )
             )
         return sorted(result, key=lambda word: (word.offset, word.language, word.surface))
