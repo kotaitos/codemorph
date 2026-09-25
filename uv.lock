@@ -80,6 +80,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pathspec" },
     { name = "pydantic" },
+    { name = "pyicu-wheels" },
     { name = "pyyaml" },
     { name = "scikit-learn" },
     { name = "sudachidict-core" },
@@ -95,6 +96,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.3" },
     { name = "pathspec", specifier = ">=0.12" },
     { name = "pydantic", specifier = ">=2.11" },
+    { name = "pyicu-wheels", specifier = "==2.15.2" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "scikit-learn", specifier = ">=1.7" },
     { name = "sudachidict-core", specifier = ">=20250825,<20260723.1" },
@@ -505,6 +507,39 @@ source = { registry = "https://pypi.flatt.tech/simple/" }
 sdist = { url = "https://pypi.flatt.tech/files/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
 wheels = [
     { url = "https://pypi.flatt.tech/files/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pyicu-wheels"
+version = "2.15.2"
+source = { registry = "https://pypi.flatt.tech/simple/" }
+wheels = [
+    { url = "https://pypi.flatt.tech/files/packages/37/b1/f532bd0d8754c921efa1be6918e190955f6bed4faef8d15a0b982f249f63/pyicu_wheels-2.15.2-cp314-cp314-macosx_15_0_arm64.whl", hash = "sha256:a0bf469f9c01f67c038a12316731a19b909d29ee84b38a618d97ac13370fbee2", size = 14935654, upload-time = "2026-03-11T12:47:12.818Z" },
+    { url = "https://pypi.flatt.tech/files/packages/42/b7/d6576cbf18e2f5ac7023a8197a33a31e092c27d632308c927ce3b0724b48/pyicu_wheels-2.15.2-cp314-cp314-macosx_15_0_x86_64.whl", hash = "sha256:4621467d6c1e0696e80d10452983968b44bac5d904fc652544d579fb73d20c3d", size = 15070444, upload-time = "2026-03-11T12:47:16.058Z" },
+    { url = "https://pypi.flatt.tech/files/packages/0c/4e/9086b79bc8f5e152f975519de4438dc876fe778aacca523734abe5eaba13/pyicu_wheels-2.15.2-cp314-cp314-manylinux2010_i686.manylinux2014_i686.manylinux_2_12_i686.manylinux_2_17_i686.whl", hash = "sha256:5a55af12c6d422051ba3d585a682bb5062c9c1c04f80c0b2023c954e2b92388b", size = 18241042, upload-time = "2026-03-11T12:47:20.084Z" },
+    { url = "https://pypi.flatt.tech/files/packages/f4/62/2352018c4e4bc5dfd4595a637209ca35d018597720ad43f1e22d372ea0db/pyicu_wheels-2.15.2-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:454e32089cb7bfbbb729cabc1639580cc286cae6d2734532babd780c14b03690", size = 17971742, upload-time = "2026-03-11T12:47:23.996Z" },
+    { url = "https://pypi.flatt.tech/files/packages/81/e4/aa97af827ea0f685e0d87e71f15b544713508472ae1d5b11a7018675267c/pyicu_wheels-2.15.2-cp314-cp314-manylinux_2_27_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:fb361d1be5bb36299dac1172c51b04de2e99a0d18233a6d625ff4ff71351b0e2", size = 18562708, upload-time = "2026-03-11T12:47:28.029Z" },
+    { url = "https://pypi.flatt.tech/files/packages/e8/27/3947a73e906ef82f9293a247f9a7d26b52c82b2822edf73a8ab268f445a7/pyicu_wheels-2.15.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9528156670ddac14ba5f589ecbede9899ee9f1c1519538d0fbdb1d9e35d6b50c", size = 18247667, upload-time = "2026-03-11T12:47:32.275Z" },
+    { url = "https://pypi.flatt.tech/files/packages/8e/d6/11264ef9b103d6ee7ee992b88a2cc68b280bd4ca3d892e279516943b9763/pyicu_wheels-2.15.2-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:1ddb7f90b6d66bec235a8ab1213b47d1983fc56488d0d4f481a3d4bf2f1b7da2", size = 18955801, upload-time = "2026-03-11T12:47:36.012Z" },
+    { url = "https://pypi.flatt.tech/files/packages/66/1b/7a21bb44f53de782ce002411cf0849972a7abe3ec6e2948f00d7526dc6ab/pyicu_wheels-2.15.2-cp314-cp314-musllinux_1_2_i686.whl", hash = "sha256:27c1867aedb18b0f8869bdfd5ad32582d7adb9c9bffc85d0c26629ab1963ffe4", size = 19420449, upload-time = "2026-03-11T12:47:40.157Z" },
+    { url = "https://pypi.flatt.tech/files/packages/2f/13/96fa8833041fea3903571643057fbe067e7c6623513ebbfd05a527d6bb6e/pyicu_wheels-2.15.2-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:bacab5f49ae82eada268ff5da50f0bf319fab17910589e160f6912a9cadbcf22", size = 19588854, upload-time = "2026-03-11T12:47:44.081Z" },
+    { url = "https://pypi.flatt.tech/files/packages/5e/f3/910f4dc28b08fdaf4477d8c5a1c1bd4f5583941e1f0088297a37cb9cdb06/pyicu_wheels-2.15.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:e337cd7d01daf393859dc8cc3c976ec1f8fc8160904048baab0a27692ab961b1", size = 19260756, upload-time = "2026-03-11T12:47:47.513Z" },
+    { url = "https://pypi.flatt.tech/files/packages/ed/c3/93f62e3a59fc0205ef9016613070abb52e89d86af09895547e36a712c54d/pyicu_wheels-2.15.2-cp314-cp314-win32.whl", hash = "sha256:91b22f65ae53265d28fb53801dba4aee7e255ac741e843ad20cb8929ef80fb91", size = 15620445, upload-time = "2026-03-11T12:47:50.94Z" },
+    { url = "https://pypi.flatt.tech/files/packages/28/1e/6cf3ae30fd8a6eb954b6d777c340890f0039f285debd1d72859c826411dd/pyicu_wheels-2.15.2-cp314-cp314-win_amd64.whl", hash = "sha256:42a110ba8209e23302d0eef61c32c23713a99d6d1f49748f83f9e712e582f1e0", size = 16213547, upload-time = "2026-03-11T12:47:55.959Z" },
+    { url = "https://pypi.flatt.tech/files/packages/fe/d9/da3dd2c1ffc82a561b015ff2c39abb43138397364fe138f0fa1f42d8d949/pyicu_wheels-2.15.2-cp314-cp314-win_arm64.whl", hash = "sha256:f142c9e6a84949b94601243bb3f3aaf15a099d96f3819a3c4ca3d02a8665c602", size = 15705143, upload-time = "2026-03-11T12:48:01.176Z" },
+    { url = "https://pypi.flatt.tech/files/packages/24/b6/3b33c65384a7de5f37f2a3beead8aaebdc4660234e749429b856634d5fb5/pyicu_wheels-2.15.2-cp314-cp314t-macosx_15_0_arm64.whl", hash = "sha256:dc420c8d284c84566be96da4520558b4368c044b0db8701ab83c7a5a2ae74511", size = 14942662, upload-time = "2026-03-11T12:48:04.382Z" },
+    { url = "https://pypi.flatt.tech/files/packages/8e/a7/06ab91f3aa956c895ae37814f092ee029164484558ebea4d827b33539bd0/pyicu_wheels-2.15.2-cp314-cp314t-macosx_15_0_x86_64.whl", hash = "sha256:3c0670c645129c29e0c87fcd03726dd0b0d856546ea9238cb23cbf8e7fac5f0f", size = 15075435, upload-time = "2026-03-11T12:48:08.181Z" },
+    { url = "https://pypi.flatt.tech/files/packages/9d/5a/1d53c34d489abfbffefa65771f9e5b72c7f064c1f00f424ae99d19f5fbe9/pyicu_wheels-2.15.2-cp314-cp314t-manylinux2010_i686.manylinux2014_i686.manylinux_2_12_i686.manylinux_2_17_i686.whl", hash = "sha256:2648dc97391b1ea0c408131ae2aa18109491fd1d618e0b8c385adc8a13c33a2a", size = 18457589, upload-time = "2026-03-11T12:48:12.025Z" },
+    { url = "https://pypi.flatt.tech/files/packages/3e/13/0d6da2d1d065b88ab8a237fb99ee7b4b1de5d1621df87d996d83822a0b47/pyicu_wheels-2.15.2-cp314-cp314t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4ed27a1119bf93629593d0db31bea6f96fc62e9b8bee1d416edc34ef59f95e06", size = 18242823, upload-time = "2026-03-11T12:48:15.307Z" },
+    { url = "https://pypi.flatt.tech/files/packages/87/f4/5674e82ea4f66dff265f3afbe5224492e0a94aaa87d80fcf1a49bcec4677/pyicu_wheels-2.15.2-cp314-cp314t-manylinux_2_27_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:8c82db0d6198bfeb1f2a90f495d5516261d04327f4b1256c4921cd41e8f44e58", size = 18827552, upload-time = "2026-03-11T12:48:18.802Z" },
+    { url = "https://pypi.flatt.tech/files/packages/3a/7e/35a92512d533c36a0d867ced78ecd1513bced3a457278c7ed47cf77f4072/pyicu_wheels-2.15.2-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c7426da673bb424adc04b5b63e5ae4c3733683c99ca7001397020c7f44984c81", size = 18487579, upload-time = "2026-03-11T12:48:22.878Z" },
+    { url = "https://pypi.flatt.tech/files/packages/5d/7b/f8f418ae4b43fbd1b9bb3be3194cbd82acfa2fb90044620eef431d360dfc/pyicu_wheels-2.15.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:e443807eedc88f97f68fbae7a20aa8c90cd291b7f62d1e35166f6dc5703a48dd", size = 19206241, upload-time = "2026-03-11T12:48:26.532Z" },
+    { url = "https://pypi.flatt.tech/files/packages/29/fb/eae1e6ae0975d9b18a1adf9f317f5465e96d4bcd5e4068bcb07583438752/pyicu_wheels-2.15.2-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:47d3357313c4b3066f3b78e33c697426e67dfbe8f53e1b78d62824584c9327e0", size = 19634357, upload-time = "2026-03-11T12:48:30.187Z" },
+    { url = "https://pypi.flatt.tech/files/packages/93/7d/7e5d0e4380c403c45b5bc41f3fd7bf974546592da1ebebe4dd793bcb94cb/pyicu_wheels-2.15.2-cp314-cp314t-musllinux_1_2_ppc64le.whl", hash = "sha256:7bdbc3fe816f20034f622c4f6bbc9f9d74accde6d4c24c1672ae4f882d30470c", size = 19834344, upload-time = "2026-03-11T12:48:34.054Z" },
+    { url = "https://pypi.flatt.tech/files/packages/89/22/5eb66ae2f42b2f79d6e3863b63ad5c76e4f8f56d22d1bc1b047d9f7c0b77/pyicu_wheels-2.15.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:6d40748a664eaa26df9256ba694c9bdbe05e24149a2a26f9477ff47a92221717", size = 19485114, upload-time = "2026-03-11T12:48:38.308Z" },
+    { url = "https://pypi.flatt.tech/files/packages/51/2e/4691a0a5b8a2c3763a22c265b5a72b13d41084cb958d2b1ebc7fb164d90f/pyicu_wheels-2.15.2-cp314-cp314t-win32.whl", hash = "sha256:36cb5a705b7d198b413e243e48c11d02a7ebc33bda5958a0ec9c852f31478a5f", size = 15628512, upload-time = "2026-03-11T12:48:43.906Z" },
+    { url = "https://pypi.flatt.tech/files/packages/85/af/82ee132629fa9eb470c07ca77382358f773236ac3b882471b401d55f8ce8/pyicu_wheels-2.15.2-cp314-cp314t-win_amd64.whl", hash = "sha256:ce369461880be7db5eaf60d640f34ddee78b70c225bd03f9f7df2932ef5a09b9", size = 16204048, upload-time = "2026-03-11T12:48:47.209Z" },
+    { url = "https://pypi.flatt.tech/files/packages/1e/b8/7f8dad7a93413ab9fd7fdcf0108bcc31f5e6d3b7d523b99a062e1da6c129/pyicu_wheels-2.15.2-cp314-cp314t-win_arm64.whl", hash = "sha256:2d193aab4f69df4da72dcc53dcbbefb2a31eca927589573766cc8beed82f9d58", size = 15718321, upload-time = "2026-03-11T12:48:50.725Z" },
 ]
 
 [[package]]

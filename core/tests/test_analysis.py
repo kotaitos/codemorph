@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from codemorph_core.analysis import analyze_repository
 from codemorph_core.config import DEFAULT_CONFIG, ConfigError, load_config
+from codemorph_core.tokenize import WordTokenizer, sentence_units
 
 
 def _repository(tmp_path: Path) -> Path:
@@ -69,3 +70,42 @@ def test_empty_repository_still_produces_a_database(tmp_path: Path) -> None:
     assert result.tokens == 0
     with sqlite3.connect(result.database) as db:
         assert db.execute("SELECT COUNT(*) FROM tokens").fetchone()[0] == 0
+
+
+def test_multilingual_words_and_unicode_offsets(tmp_path: Path) -> None:
+    root = _repository(tmp_path)
+    tokenizer = WordTokenizer(load_config(root / "codemorph.yml"))
+    source = "😀 français 中文分词 ประเทศไทย مرحبا Привет 日本語と English 24.11"
+    words = tokenizer.words(source)
+    surfaces = {word.surface for word in words}
+    assert {"français", "中文", "ประเทศไทย", "مرحبا", "Привет", "日本語", "English"} <= surfaces
+    assert "24.11" not in surfaces
+    assert all(
+        source[word.offset : word.offset + len(word.surface)] == word.surface for word in words
+    )
+    assert {word.language for word in words} >= {
+        "und-Latn",
+        "und-Hani",
+        "und-Thai",
+        "und-Arab",
+        "und-Cyrl",
+        "ja",
+    }
+    assert [unit.strip() for unit, _ in sentence_units("你好。สวัสดี! Bonjour.")] == [
+        "你好。",
+        "สวัสดี!",
+        "Bonjour.",
+    ]
+
+
+def test_explicit_language_tag_and_stopwords(tmp_path: Path) -> None:
+    root = _repository(tmp_path)
+    config = root / "codemorph.yml"
+    config.write_text(
+        DEFAULT_CONFIG.replace("natural: [all]", "natural: [fr]").replace(
+            "  en: []", "  en: []\n  words:\n    fr: [bonjour]"
+        ),
+        encoding="utf-8",
+    )
+    words = WordTokenizer(load_config(config)).words("Bonjour français Привет")
+    assert [(word.surface, word.language) for word in words] == [("français", "fr")]

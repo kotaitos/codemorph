@@ -3,7 +3,6 @@
 import json
 import logging
 import math
-import re
 import sqlite3
 from collections import Counter
 from dataclasses import dataclass
@@ -17,13 +16,12 @@ from umap import UMAP
 from .config import AnalysisConfig, load_config
 from .gitfiles import markdown_files, repository_root
 from .markdown import prose_blocks
-from .tokenize import WordTokenizer
+from .tokenize import WordTokenizer, sentence_units
 
 LOGGER = logging.getLogger(__name__)
 MODEL_ID = "minishlab/potion-multilingual-128M"
 MODEL_REVISION = "73908c3438cf03b6a01bcb9611d62b23d0726f08"
 SCHEMA_VERSION = "1"
-_SENTENCE = re.compile(r"[^。！？.!?\n]+[。！？.!?]?", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -136,7 +134,7 @@ def analyze_repository(path: Path, *, embedder=_vectors) -> AnalysisResult:
             block_units = (
                 [(block.text, 0)]
                 if config.analysis.cooccurrence.unit == "paragraph"
-                else [(match.group(), match.start()) for match in _SENTENCE.finditer(block.text)]
+                else sentence_units(block.text)
             )
             for unit, unit_offset in block_units:
                 unique: set[tuple[str, str]] = set()
