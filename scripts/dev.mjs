@@ -22,21 +22,25 @@ if (git.status !== 0) {
   process.exit(1);
 }
 
-const api = spawn(process.execPath, [join(root, "ui/server/server.ts")], {
-  cwd: root,
-  env: {
-    ...process.env,
-    CODEMORPH_DB: join(git.stdout.trim(), ".codemorph", "word-map.sqlite3"),
-    CODEMORPH_PORT: "4174",
+const api = spawn(
+  process.execPath,
+  [join(root, "packages/ui/server/server.ts")],
+  {
+    cwd: root,
+    env: {
+      ...process.env,
+      CODEMORPH_DB: join(git.stdout.trim(), ".codemorph", "word-map.sqlite3"),
+      CODEMORPH_PORT: "4174",
+    },
+    stdio: "inherit",
   },
-  stdio: "inherit",
-});
+);
 const web = spawn(
   process.execPath,
   [
     join(root, "node_modules/vite/bin/vite.js"),
     "--config",
-    "ui/vite.config.ts",
+    "packages/ui/vite.config.ts",
   ],
   { cwd: root, stdio: "inherit" },
 );

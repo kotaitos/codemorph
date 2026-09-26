@@ -39,9 +39,9 @@ def _init(root: Path) -> None:
 
 def _serve(root: Path, port: int) -> int:
     package_root = Path(
-        os.environ.get("CODEMORPH_PACKAGE_ROOT", Path(__file__).resolve().parents[4])
+        os.environ.get("CODEMORPH_PACKAGE_ROOT", Path(__file__).resolve().parents[5])
     )
-    server = package_root / "ui" / "dist" / "server.mjs"
+    server = package_root / "packages" / "ui" / "dist" / "server.mjs"
     if not server.is_file():
         raise FileNotFoundError(f"UI has not been built: {server}")
     environment = os.environ.copy()

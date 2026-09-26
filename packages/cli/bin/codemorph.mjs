@@ -4,7 +4,10 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const packageRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../..",
+);
 const args = process.argv.slice(2);
 const command = args.length ? args : ["serve"];
 let child;
@@ -45,7 +48,7 @@ if (command[0] === "serve") {
   }
   child = spawn(
     process.execPath,
-    [join(packageRoot, "ui", "dist", "server.mjs")],
+    [join(packageRoot, "packages", "ui", "dist", "server.mjs")],
     {
       cwd: process.cwd(),
       env: {

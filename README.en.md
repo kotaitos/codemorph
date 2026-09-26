@@ -4,13 +4,13 @@
 
 codemorph analyzes Markdown in a Git repository locally and explores multilingual word frequency, semantic similarity, and co-occurrence in a Word Map. It does not grade writing or send source text to an external service. Markdown is currently the only supported input format.
 
-**Release status:** The app is implemented, but `@kotaitos/codemorph` is not yet published to npm. The `npx` commands below will work after publication. For this checkout, run `mise run setup`, `mise run build`, then `node cli/bin/codemorph.mjs`.
+**Release status:** The app is implemented, but `@kotaitos/codemorph` is not yet published to npm. The `npx` commands below will work after publication. For this checkout, run `mise run setup`, `mise run build`, then `node packages/cli/bin/codemorph.mjs`.
 
 ## Components
 
-- [core](core/README.md): Python Markdown analysis, statistics, and SQLite output
-- [cli](cli/README.md): npm launcher and `init`, `analyze`, `serve`
-- [ui](ui/README.md): read-only HTTP API and React/D3 Word Map
+- [core](packages/core/README.md): Python Markdown analysis, statistics, and SQLite output
+- [cli](packages/cli/README.md): npm launcher and `init`, `analyze`, `serve`
+- [ui](packages/ui/README.md): read-only HTTP API and React/D3 Word Map
 
 The [design system](DESIGN.md) records the interface colors, typography, spacing, and interaction rules.
 

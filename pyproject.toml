@@ -11,7 +11,7 @@ url = "https://pypi.flatt.tech/simple/"
 default = true
 
 [tool.uv.workspace]
-members = ["core", "cli/python"]
+members = ["packages/core", "packages/cli/python"]
 
 [dependency-groups]
 dev = ["pytest>=8.3", "ruff>=0.13"]
@@ -21,4 +21,4 @@ line-length = 100
 target-version = "py314"
 
 [tool.pytest.ini_options]
-testpaths = ["core/tests", "cli/python/tests"]
+testpaths = ["packages/core/tests", "packages/cli/python/tests"]
