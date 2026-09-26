@@ -41,8 +41,7 @@ function App() {
   );
   const [tokens, setTokens] = useState<Token[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [pinnedDetail, setPinnedDetail] = useState<Detail | null>(null);
-  const [previewDetail, setPreviewDetail] = useState<Detail | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<number>();
@@ -54,9 +53,6 @@ function App() {
   const zoom = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectionRequest = useRef(0);
   const pendingSelectionId = useRef<number | null>(null);
-  const previewRequest = useRef(0);
-  const previewTargetId = useRef<number | null>(null);
-  const previewTimer = useRef<number | null>(null);
   const detailCache = useRef(new Map<number, Detail>());
   const t = messages[locale];
   const formatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
@@ -118,11 +114,6 @@ function App() {
       language ? tokens.filter((token) => token.language === language) : tokens,
     [tokens, language],
   );
-  const detail =
-    previewDetail && previewDetail.token.id === hoverId
-      ? previewDetail
-      : pinnedDetail;
-  const isPreview = detail !== null && detail === previewDetail;
   const selectedId = detail?.token.id;
   // The selected point must stay above overlapping hit targets so it can be clicked again.
   const plottedTokens = useMemo(() => {
@@ -190,7 +181,7 @@ function App() {
   useEffect(() => {
     if (
       focusId === null ||
-      pinnedDetail?.token.id !== focusId ||
+      detail?.token.id !== focusId ||
       !svg.current ||
       !zoom.current
     )
@@ -209,61 +200,19 @@ function App() {
           .translate(WIDTH / 2 - point.x * 2.6, HEIGHT / 2 - point.y * 2.6)
           .scale(2.6),
       );
-  }, [focusId, pinnedDetail?.token.id, positions, WIDTH, HEIGHT]);
-
-  function clearPreview() {
-    ++previewRequest.current;
-    if (previewTimer.current !== null)
-      window.clearTimeout(previewTimer.current);
-    previewTimer.current = null;
-    previewTargetId.current = null;
-    setHoverId(undefined);
-    setPreviewDetail(null);
-  }
-
-  function startPreview(id: number, delay = 80) {
-    if (previewTargetId.current === id) return;
-    ++previewRequest.current;
-    if (previewTimer.current !== null)
-      window.clearTimeout(previewTimer.current);
-    previewTargetId.current = id;
-    setHoverId(id);
-    setPreviewDetail(null);
-    if (pinnedDetail?.token.id === id) return;
-    const cached = detailCache.current.get(id);
-    if (cached) {
-      setPreviewDetail(cached);
-      return;
-    }
-    const request = previewRequest.current;
-    previewTimer.current = window.setTimeout(() => {
-      previewTimer.current = null;
-      getJson<Detail>(`/api/tokens/${id}`)
-        .then((next) => {
-          detailCache.current.set(id, next);
-          if (request === previewRequest.current) setPreviewDetail(next);
-        })
-        .catch(() => {
-          // A transient hover preview must not replace the map with an error.
-        });
-    }, delay);
-  }
+  }, [focusId, detail?.token.id, positions, WIDTH, HEIGHT]);
 
   function select(id: number, focus = false) {
-    if (pinnedDetail?.token.id === id || pendingSelectionId.current === id) {
+    if (detail?.token.id === id || pendingSelectionId.current === id) {
       clearSelection();
       return;
     }
-    const preview =
-      previewDetail?.token.id === id
-        ? previewDetail
-        : detailCache.current.get(id);
-    clearPreview();
     setFocusId(focus ? id : null);
     const request = ++selectionRequest.current;
-    if (preview) {
+    const cached = detailCache.current.get(id);
+    if (cached) {
       pendingSelectionId.current = null;
-      setPinnedDetail(preview);
+      setDetail(cached);
       return;
     }
     pendingSelectionId.current = id;
@@ -272,7 +221,7 @@ function App() {
         if (request === selectionRequest.current) {
           detailCache.current.set(id, next);
           pendingSelectionId.current = null;
-          setPinnedDetail(next);
+          setDetail(next);
         }
       })
       .catch((cause) => {
@@ -286,8 +235,7 @@ function App() {
   function clearSelection() {
     ++selectionRequest.current;
     pendingSelectionId.current = null;
-    clearPreview();
-    setPinnedDetail(null);
+    setDetail(null);
     setFocusId(null);
   }
 
@@ -319,8 +267,7 @@ function App() {
 
   function filterLanguage(next: string | null) {
     setLanguage(next);
-    if (next && pinnedDetail?.token.language !== next) clearSelection();
-    else clearPreview();
+    if (next && detail?.token.language !== next) clearSelection();
   }
 
   function chooseFromPanel(id: number) {
@@ -474,17 +421,10 @@ function App() {
                       key={token.id}
                       className={`word ${dim ? "dim" : ""} ${selected ? "selected" : ""}`}
                       href={`#word-${token.id}`}
-                      onMouseEnter={() => {
-                        if (
-                          window.matchMedia(
-                            "(hover: hover) and (pointer: fine)",
-                          ).matches
-                        )
-                          startPreview(token.id);
-                      }}
-                      onMouseLeave={clearPreview}
-                      onFocus={() => startPreview(token.id, 0)}
-                      onBlur={clearPreview}
+                      onMouseEnter={() => setHoverId(token.id)}
+                      onMouseLeave={() => setHoverId(undefined)}
+                      onFocus={() => setHoverId(token.id)}
+                      onBlur={() => setHoverId(undefined)}
                       onClick={(event) => {
                         event.preventDefault();
                         select(token.id);
@@ -495,7 +435,7 @@ function App() {
                           select(token.id);
                         }
                       }}
-                      aria-label={`${token.surface}: ${pinnedDetail?.token.id === token.id ? t.clear : t.pin}`}
+                      aria-label={`${token.surface}: ${selected ? t.clear : t.showDetails}`}
                     >
                       <circle
                         cx={point.x}
@@ -556,7 +496,6 @@ function App() {
           <DetailPanel
             detail={detail}
             locale={locale}
-            preview={isPreview}
             side={inspectorSide}
             onClose={clearSelection}
             onSelect={chooseFromPanel}
