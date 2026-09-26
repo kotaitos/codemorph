@@ -93,15 +93,76 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!svg.current) return;
+    const element = svg.current;
+    if (!element) return;
+    let gestureStartScale: number | null = null;
     const behavior = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.75, 16])
+      .filter((event) =>
+        event.type === "wheel"
+          ? event.ctrlKey && gestureStartScale === null
+          : !event.ctrlKey && !event.button,
+      )
       .on("zoom", (event) => setTransform(event.transform));
     zoom.current = behavior;
-    d3.select(svg.current).call(behavior);
+    const selection = d3.select(element).call(behavior);
+    selection.on(
+      "wheel.pan",
+      (event: WheelEvent) => {
+        event.preventDefault();
+        if (event.ctrlKey || gestureStartScale !== null) return;
+        const unit =
+          event.deltaMode === 1
+            ? 16
+            : event.deltaMode === 2
+              ? element.clientHeight
+              : 1;
+        const scale = d3.zoomTransform(element).k;
+        selection.call(
+          behavior.translateBy,
+          (-event.deltaX * unit) / scale,
+          (-event.deltaY * unit) / scale,
+        );
+      },
+      { passive: false },
+    );
+
+    // Safari sends trackpad pinch as gesture events instead of Ctrl + wheel.
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureStartScale = d3.zoomTransform(element).k;
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      if (gestureStartScale === null) return;
+      const gesture = event as Event & {
+        scale: number;
+        clientX: number;
+        clientY: number;
+      };
+      selection.call(
+        behavior.scaleTo,
+        gestureStartScale * gesture.scale,
+        d3.pointer(gesture, element),
+      );
+    };
+    const onGestureEnd = (event: Event) => {
+      event.preventDefault();
+      gestureStartScale = null;
+    };
+    element.addEventListener("gesturestart", onGestureStart, {
+      passive: false,
+    });
+    element.addEventListener("gesturechange", onGestureChange, {
+      passive: false,
+    });
+    element.addEventListener("gestureend", onGestureEnd, { passive: false });
     return () => {
-      d3.select(svg.current).on(".zoom", null);
+      selection.on(".zoom", null).on(".pan", null);
+      element.removeEventListener("gesturestart", onGestureStart);
+      element.removeEventListener("gesturechange", onGestureChange);
+      element.removeEventListener("gestureend", onGestureEnd);
     };
   }, []);
 
