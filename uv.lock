@@ -61,18 +61,18 @@ wheels = [
 [[package]]
 name = "codemorph-cli"
 version = "0.1.0"
-source = { editable = "cli/python" }
+source = { editable = "packages/cli/python" }
 dependencies = [
     { name = "codemorph-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "codemorph-core", editable = "core" }]
+requires-dist = [{ name = "codemorph-core", editable = "packages/core" }]
 
 [[package]]
 name = "codemorph-core"
 version = "0.1.0"
-source = { editable = "core" }
+source = { editable = "packages/core" }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "markdown-it-py" },

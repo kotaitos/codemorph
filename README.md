@@ -4,13 +4,13 @@
 
 codemorphはGitリポジトリ内のMarkdown本文をローカルで解析し、多言語の語の頻度、意味の近さ、共起関係をWord Mapで探索するOSSです。文章の良否を採点せず、対象本文を外部へ送信しません。現時点の入力はMarkdownのみです。
 
-**公開状況:** アプリは実装済みですが、npmへの`@kotaitos/codemorph`公開は準備中です。以下の`npx`コマンドは公開後に利用できます。開発版は`mise run setup`、`mise run build`の後、`node cli/bin/codemorph.mjs`で実行できます。
+**公開状況:** アプリは実装済みですが、npmへの`@kotaitos/codemorph`公開は準備中です。以下の`npx`コマンドは公開後に利用できます。開発版は`mise run setup`、`mise run build`の後、`node packages/cli/bin/codemorph.mjs`で実行できます。
 
 ## 構成
 
-- [core](core/README.md): PythonによるMarkdown解析、統計計算、SQLite保存
-- [cli](cli/README.md): npm起動スクリプトと`init`・`analyze`・`serve`
-- [ui](ui/README.md): 読み取り専用HTTP APIとReact/D3のWord Map
+- [core](packages/core/README.md): PythonによるMarkdown解析、統計計算、SQLite保存
+- [cli](packages/cli/README.md): npm起動スクリプトと`init`・`analyze`・`serve`
+- [ui](packages/ui/README.md): 読み取り専用HTTP APIとReact/D3のWord Map
 
 画面の色・文字・余白・操作の基準は[デザインシステム](DESIGN.md)にまとめています。
 

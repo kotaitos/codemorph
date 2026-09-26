@@ -20,21 +20,23 @@ const report = JSON.parse(packed.stdout);
 const entry = Array.isArray(report) ? report[0] : Object.values(report)[0];
 const paths = new Set(entry.files.map((file) => file.path));
 for (const required of [
-  "cli/bin/codemorph.mjs",
-  "cli/python/src/codemorph_cli/main.py",
-  "core/src/codemorph_core/analysis.py",
-  "core/src/codemorph_core/blocks.py",
-  "core/src/codemorph_core/sources.py",
+  "packages/cli/bin/codemorph.mjs",
+  "packages/cli/python/src/codemorph_cli/main.py",
+  "packages/core/src/codemorph_core/analysis.py",
+  "packages/core/src/codemorph_core/blocks.py",
+  "packages/core/src/codemorph_core/sources.py",
   "DESIGN.md",
-  "ui/dist/server.mjs",
-  "ui/dist/public/index.html",
+  "packages/ui/dist/server.mjs",
+  "packages/ui/dist/public/index.html",
   "uv.lock",
 ]) {
   assert.ok(paths.has(required), `npm package is missing ${required}`);
 }
 assert.ok(
   [...paths].some(
-    (path) => path.endsWith(".js") && path.startsWith("ui/dist/public/assets/"),
+    (path) =>
+      path.endsWith(".js") &&
+      path.startsWith("packages/ui/dist/public/assets/"),
   ),
 );
 assert.ok(
